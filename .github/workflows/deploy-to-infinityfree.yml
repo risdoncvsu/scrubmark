@@ -7,6 +7,8 @@ on:
       - master
     paths:
       - 'infinityfree/**'
+      - '.github/workflows/deploy-to-infinityfree.yml'
+  workflow_dispatch:
 
 jobs:
   ftp-deploy:
@@ -24,6 +26,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./infinityfree/
           server-dir: ./htdocs/
+          log-level: verbose
           # Exclude config.php so your working database password on InfinityFree is not overwritten
           exclude: |
             **/.git*
