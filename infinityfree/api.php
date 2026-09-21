@@ -196,18 +196,38 @@ switch ($action) {
             jsonResponse(['error' => 'Video ID and content are required'], 400);
         }
 
-        // Allow authenticated user or guest reviewer
-        if ($user) {
-            $author = $user['name'];
+        // Fetch video to verify it exists and get video owner's ID
+        $vStmt = $db->prepare('SELECT id, user_id FROM videos WHERE id = ?');
+        $vStmt->execute([$videoId]);
+        $video = $vStmt->fetch();
+        if (!$video) {
+            jsonResponse(['error' => 'Video not found'], 404);
+        }
+
+        // Determine author display name
+        if ($user && !empty($user['id']) && !str_starts_with($user['id'], 'client_')) {
+            $author = !empty($authorName) ? $authorName : $user['name'];
             $uid = $user['id'];
         } else {
-            $author = !empty($authorName) ? $authorName : 'Client Reviewer';
-            $uid = 'client_' . bin2hex(random_bytes(6));
+            $author = !empty($authorName) ? $authorName : (!empty($user['name']) ? $user['name'] : 'Client Reviewer');
+            $uid = $user['id'] ?? ('client_' . bin2hex(random_bytes(6)));
+        }
+
+        // Check if $uid exists in users table (to safely satisfy fk_comments_user if present in MySQL)
+        $uCheck = $db->prepare('SELECT id FROM users WHERE id = ?');
+        $uCheck->execute([$uid]);
+        if (!$uCheck->fetch()) {
+            // Client is a guest reviewer not in users table: use video owner's ID for foreign key compliance
+            $uid = $video['user_id'];
         }
 
         $commentId = bin2hex(random_bytes(16));
-        $stmt = $db->prepare('INSERT INTO comments (id, video_id, user_id, author_name, content, timestamp_seconds, is_resolved) VALUES (?, ?, ?, ?, ?, ?, 0)');
-        $stmt->execute([$commentId, $videoId, $uid, $author, $content, $timestamp]);
+        try {
+            $stmt = $db->prepare('INSERT INTO comments (id, video_id, user_id, author_name, content, timestamp_seconds, is_resolved) VALUES (?, ?, ?, ?, ?, ?, 0)');
+            $stmt->execute([$commentId, $videoId, $uid, $author, $content, $timestamp]);
+        } catch (PDOException $e) {
+            jsonResponse(['error' => 'Database error saving note: ' . $e->getMessage()], 500);
+        }
 
         jsonResponse([
             'id' => $commentId,

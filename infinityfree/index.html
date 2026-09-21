@@ -264,23 +264,44 @@
 
         <!-- Note Input Field -->
         <div class="p-4 border-t border-neutral-800 bg-neutral-950">
-          <form onsubmit="handlePostComment(event)" class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 mb-1">
-              <span class="text-xs font-medium text-neutral-500">Leaving note at:</span>
-              <span id="liveTimestampBadge" class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 text-xs font-mono font-medium">0:00</span>
+          <form onsubmit="handlePostComment(event)" class="flex flex-col gap-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-neutral-500">Timestamp:</span>
+                <span id="liveTimestampBadge" class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 text-xs font-mono font-medium">0:00</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs">
+                <span class="text-neutral-500 text-[11px]">As:</span>
+                <input
+                  type="text"
+                  id="clientAuthorNameInput"
+                  placeholder="Your Name"
+                  title="Your name as shown on the note"
+                  class="bg-neutral-900 border border-neutral-700/80 rounded px-2 py-0.5 text-xs text-neutral-200 outline-none focus:border-indigo-500 w-32 placeholder-neutral-500"
+                />
+              </div>
             </div>
             <textarea
               id="commentTextInput"
               onfocus="handleCommentFocus()"
+              onkeydown="handleCommentKeyDown(event)"
               required
-              placeholder="Type a note... (pauses video)"
+              placeholder="Type a note... (pauses video, Enter to post)"
               rows="3"
               class="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-sm text-white placeholder-neutral-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
             ></textarea>
-            <button type="submit" class="self-end bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
-              Post Note
-              <i data-lucide="chevron-right" class="w-4 h-4"></i>
-            </button>
+            <div id="commentErrorMsg" class="hidden text-xs text-rose-400 bg-rose-950/40 border border-rose-800/50 rounded-lg p-2"></div>
+            <div class="flex items-center justify-between pt-0.5">
+              <span class="text-[11px] text-neutral-500">Press <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">Enter</kbd> to post</span>
+              <button
+                type="submit"
+                id="postNoteBtn"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span id="postNoteBtnText">Post Note</span>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -681,10 +702,20 @@
       }
 
       const res = await fetch(`api.php?action=video&id=${videoId}`);
+      if (!res.ok) {
+        alert('Video project not found. It may have been deleted or the link is invalid.');
+        showAuth();
+        return;
+      }
       currentVideo = await res.json();
 
       document.getElementById('reviewProjectName').innerText = currentVideo.project_name;
       document.getElementById('reviewUserDisplay').innerText = currentUser ? currentUser.name : 'Reviewer';
+
+      const authorInput = document.getElementById('clientAuthorNameInput');
+      if (authorInput) {
+        authorInput.value = currentUser ? currentUser.name : 'Client Reviewer';
+      }
 
       // Update role badge and status dot
       const isOwner = currentVideo && currentUser && (currentVideo.user_id === currentUser.id);
@@ -893,32 +924,94 @@
       }
     }
 
-    async function handlePostComment(e) {
-      e.preventDefault();
-      const text = document.getElementById('commentTextInput').value.trim();
-      if (!text || !currentVideo) return;
+    function handleCommentKeyDown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handlePostComment();
+      }
+    }
 
-      const userName = currentUser ? currentUser.name : 'Client Reviewer';
+    async function handlePostComment(e) {
+      if (e) e.preventDefault();
+      const textInput = document.getElementById('commentTextInput');
+      const text = textInput ? textInput.value.trim() : '';
+      const errorEl = document.getElementById('commentErrorMsg');
+      const btn = document.getElementById('postNoteBtn');
+      const btnText = document.getElementById('postNoteBtnText');
+
+      if (errorEl) {
+        errorEl.innerText = '';
+        errorEl.classList.add('hidden');
+      }
+
+      if (!text) {
+        if (errorEl) {
+          errorEl.innerText = 'Please enter a note before posting.';
+          errorEl.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (!currentVideo) {
+        if (errorEl) {
+          errorEl.innerText = 'No active video project loaded.';
+          errorEl.classList.remove('hidden');
+        }
+        return;
+      }
+
+      const authorInput = document.getElementById('clientAuthorNameInput');
+      let customAuthor = authorInput ? authorInput.value.trim() : '';
+      if (!customAuthor && currentUser && currentUser.name) {
+        customAuthor = currentUser.name;
+      }
+      const userName = customAuthor || 'Client Reviewer';
+
+      // Update current user name in memory & storage
+      if (currentUser) {
+        currentUser.name = userName;
+        try { localStorage.setItem('scrubmark_guest', JSON.stringify(currentUser)); } catch (e) {}
+      }
+
       const userId = currentUser ? currentUser.id : ('client_' + Math.random().toString(36).substring(2, 9));
 
-      const res = await fetch('api.php?action=add_comment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-          'x-user-name': userName
-        },
-        body: JSON.stringify({
-          video_id: currentVideo.id,
-          author_name: userName,
-          content: text,
-          timestamp_seconds: currentLiveTimestamp
-        })
-      });
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.innerText = 'Posting...';
 
-      if (res.ok) {
-        document.getElementById('commentTextInput').value = '';
+      try {
+        const res = await fetch('api.php?action=add_comment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': userId,
+            'x-user-name': userName
+          },
+          body: JSON.stringify({
+            video_id: currentVideo.id,
+            author_name: userName,
+            content: text,
+            timestamp_seconds: currentLiveTimestamp
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to post note.');
+        }
+
+        if (textInput) textInput.value = '';
         await loadComments(currentVideo.id);
+      } catch (err) {
+        console.error('Error posting note:', err);
+        if (errorEl) {
+          errorEl.innerText = err.message || 'Unable to post note. Please check your connection or database setup.';
+          errorEl.classList.remove('hidden');
+        } else {
+          alert(err.message || 'Unable to post note.');
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.innerText = 'Post Note';
       }
     }
 

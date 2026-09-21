@@ -392,7 +392,15 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                 value={newComment}
                 onChange={e => setNewComment(e.target.value)}
                 onFocus={handleCommentFocus}
-                placeholder="Type a note... (pauses video)"
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (newComment.trim()) {
+                      submitComment(e);
+                    }
+                  }
+                }}
+                placeholder="Type a note... (pauses video, Enter to post)"
                 className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-sm text-white placeholder:text-neutral-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
                 rows={3}
               />
