@@ -1,0 +1,19 @@
+# ScrubMark .htaccess for InfinityFree (Apache)
+
+# Enable Rewrite Engine
+RewriteEngine On
+
+# Ensure correct MIME types and UTF-8
+AddDefaultCharset UTF-8
+AddType text/javascript .js
+AddType text/css .css
+
+# Prevent directory browsing
+Options -Indexes
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScrubMark - Video Review & Timestamped Notes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-neutral-950 text-neutral-100 min-h-screen flex flex-col">
+
+  <!-- ============================================================ -->
+  <!-- 1. AUTHENTICATION LANDING VIEW (LOGIN / SIGN UP) -->
+  <!-- ============================================================ -->
+  <div id="authView" class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md px-4">
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+          <i data-lucide="video" class="w-5 h-5"></i>
+        </div>
+        <span class="text-2xl font-black tracking-tight text-white">ScrubMark</span>
+      </div>
+      <h2 id="authHeading" class="text-center text-xl sm:text-2xl font-bold tracking-tight text-neutral-200">
+        Sign in to your workspace
+      </h2>
+      <p class="mt-2 text-center text-sm text-neutral-400">
+        Precise, timestamp-synchronized video review and feedback.
+      </p>
+
+      <!-- Mode Switcher -->
+      <div class="mt-6 flex bg-neutral-900/80 p-1 rounded-xl border border-neutral-800">
+        <button id="tabLogin" onclick="switchAuthMode('login')" class="flex-1 py-2 text-sm font-medium rounded-lg bg-neutral-800 text-white shadow-sm transition-all">
+          Sign In
+        </button>
+        <button id="tabSignup" onclick="switchAuthMode('signup')" class="flex-1 py-2 text-sm font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all">
+          Create Account
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4">
+      <div class="bg-neutral-900/90 py-8 px-6 shadow-2xl rounded-2xl border border-neutral-800 sm:px-8">
+        <div id="authError" class="hidden mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-2 text-red-400 text-sm">
+          <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 shrink-0"></i>
+          <span id="authErrorText"></span>
+        </div>
+
+        <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+          <div id="nameFieldContainer" class="hidden">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Full Name</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                <i data-lucide="user" class="w-4 h-4"></i>
+              </div>
+              <input type="text" id="authName" placeholder="e.g. Alex Rivera" class="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Email Address</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                <i data-lucide="mail" class="w-4 h-4"></i>
+              </div>
+              <input type="email" id="authEmail" required placeholder="name@company.com" class="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Password</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                <i data-lucide="lock" class="w-4 h-4"></i>
+              </div>
+              <input type="password" id="authPassword" required placeholder="••••••••" class="w-full pl-9 pr-10 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+            </div>
+          </div>
+
+          <div id="confirmPasswordFieldContainer" class="hidden">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Confirm Password</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                <i data-lucide="lock" class="w-4 h-4"></i>
+              </div>
+              <input type="password" id="authConfirmPassword" placeholder="Repeat password" class="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+            </div>
+          </div>
+
+          <button type="submit" id="authSubmitBtn" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors shadow-md shadow-indigo-600/30">
+            <span id="authSubmitText">Sign In</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 2. DASHBOARD VIEW (VIDEOS LIST & ADD VIDEO) -->
+  <!-- ============================================================ -->
+  <div id="dashboardView" class="hidden min-h-screen flex flex-col bg-neutral-950">
+    <header class="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
+      <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+            <i data-lucide="video" class="w-4 h-4"></i>
+          </div>
+          <span class="font-bold text-white text-lg">ScrubMark</span>
+        </div>
+        <div class="flex items-center gap-4 text-sm text-neutral-400">
+          <span>Signed in as <strong id="currentUserDisplay" class="text-neutral-200"></strong></span>
+          <button onclick="handleLogout()" class="hover:text-white underline">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
+      <div class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-2xl font-bold text-white">Project Workspaces</h1>
+          <p class="text-sm text-neutral-400">Review YouTube videos frame-by-frame with synchronized notes.</p>
+        </div>
+        <button onclick="toggleAddVideoModal(true)" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-500 transition-colors shadow-sm">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          Add Video
+        </button>
+      </div>
+
+      <!-- Add Video Modal/Form -->
+      <div id="addVideoBox" class="hidden bg-neutral-900 p-6 rounded-xl border border-neutral-800 shadow-xl mb-8">
+        <h2 class="text-lg font-bold mb-4 text-white">Add YouTube Video</h2>
+        <form onsubmit="handleAddVideoSubmit(event)" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">Project Name</label>
+              <input type="text" id="newProjectName" required placeholder="e.g. Director's Cut v2" class="w-full px-3 py-2 bg-neutral-950 border border-neutral-700 rounded-md text-white text-sm focus:border-indigo-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">YouTube URL (Unlisted or Public)</label>
+              <input type="url" id="newYoutubeUrl" required placeholder="https://youtube.com/watch?v=..." class="w-full px-3 py-2 bg-neutral-950 border border-neutral-700 rounded-md text-white text-sm focus:border-indigo-500 outline-none">
+            </div>
+          </div>
+          <div id="addVideoError" class="hidden text-red-400 text-xs"></div>
+          <div class="flex justify-end gap-2">
+            <button type="button" onclick="toggleAddVideoModal(false)" class="px-4 py-2 text-neutral-400 hover:text-white rounded-md text-sm">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 font-medium text-sm">Save & Open</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Videos Grid -->
+      <div id="videosList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      <div id="noVideosMsg" class="hidden text-center py-16 bg-neutral-900/50 rounded-xl border border-neutral-800 border-dashed">
+        <i data-lucide="video" class="w-12 h-12 mx-auto text-neutral-600 mb-4"></i>
+        <h3 class="text-base font-medium text-white mb-1">No video projects yet</h3>
+        <p class="text-neutral-400 text-sm">Click "Add Video" above to paste a YouTube link.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 3. VIDEO REVIEW WORKSPACE (PLAYER & SIDEBAR) -->
+  <!-- ============================================================ -->
+  <div id="reviewView" class="hidden h-screen flex flex-col bg-neutral-950 text-white overflow-hidden">
+    <header class="h-14 border-b border-neutral-800 px-4 flex items-center justify-between shrink-0 bg-neutral-900">
+      <div class="flex items-center gap-4">
+        <button onclick="closeReview()" class="text-neutral-400 hover:text-white transition-colors" title="Back to Projects">
+          <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <div class="h-4 w-px bg-neutral-800"></div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">ScrubMark</span>
+          <h1 id="reviewProjectName" class="font-medium text-neutral-200"></h1>
+        </div>
+      </div>
+      <div class="text-sm text-neutral-400 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span id="reviewUserDisplay"></span>
+      </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+      <!-- Player Area -->
+      <div class="flex-1 flex flex-col relative bg-black">
+        <div class="flex-1 relative">
+          <div id="youtubePlayerContainer" class="absolute inset-0 w-full h-full"></div>
+        </div>
+      </div>
+
+      <!-- Notes Sidebar -->
+      <div class="w-96 bg-neutral-900 border-l border-neutral-800 flex flex-col shrink-0">
+        <div class="p-4 border-b border-neutral-800 bg-neutral-900 flex items-center justify-between">
+          <h2 class="font-medium flex items-center gap-2 text-sm">
+            <i data-lucide="message-square" class="w-4 h-4 text-indigo-400"></i>
+            Review Notes
+          </h2>
+          <span id="notesCountBadge" class="text-xs font-mono text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded">0</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-6">
+          <!-- Active Notes -->
+          <div>
+            <h3 class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3 px-1">Active Notes</h3>
+            <div id="activeNotesList" class="space-y-2"></div>
+          </div>
+
+          <!-- Resolved Notes -->
+          <div id="resolvedContainer" class="hidden">
+            <h3 class="text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5">
+              <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-neutral-500"></i>
+              Resolved
+            </h3>
+            <div id="resolvedNotesList" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Note Input Field -->
+        <div class="p-4 border-t border-neutral-800 bg-neutral-950">
+          <form onsubmit="handlePostComment(event)" class="flex flex-col gap-2">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-xs font-medium text-neutral-500">Leaving note at:</span>
+              <span id="liveTimestampBadge" class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 text-xs font-mono font-medium">0:00</span>
+            </div>
+            <textarea
+              id="commentTextInput"
+              onfocus="handleCommentFocus()"
+              required
+              placeholder="Type a note... (pauses video)"
+              rows="3"
+              class="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-sm text-white placeholder-neutral-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
+            ></textarea>
+            <button type="submit" class="self-end bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
+              Post Note
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- YouTube IFrame API Script -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+  <script>
+    // --- STATE MANAGEMENT ---
+    let currentUser = null;
+    let currentAuthMode = 'login';
+    let currentVideo = null;
+    let ytPlayer = null;
+    let currentNotes = [];
+    let currentLiveTimestamp = 0;
+    let tickerInterval = null;
+
+    // Helper: format seconds to MM:SS
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // --- APP INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      try {
+        const res = await fetch('api.php?action=me');
+        if (res.ok) {
+          currentUser = await res.json();
+          showDashboard();
+        } else {
+          showAuth();
+        }
+      } catch (e) {
+        showAuth();
+      }
+    });
+
+    // --- AUTH VIEWS ---
+    function switchAuthMode(mode) {
+      currentAuthMode = mode;
+      document.getElementById('authError').classList.add('hidden');
+      const tabLogin = document.getElementById('tabLogin');
+      const tabSignup = document.getElementById('tabSignup');
+      const nameField = document.getElementById('nameFieldContainer');
+      const confirmPass = document.getElementById('confirmPasswordFieldContainer');
+      const heading = document.getElementById('authHeading');
+      const submitText = document.getElementById('authSubmitText');
+
+      if (mode === 'login') {
+        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-lg bg-neutral-800 text-white shadow-sm transition-all';
+        tabSignup.className = 'flex-1 py-2 text-sm font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all';
+        nameField.classList.add('hidden');
+        confirmPass.classList.add('hidden');
+        heading.innerText = 'Sign in to your workspace';
+        submitText.innerText = 'Sign In';
+      } else {
+        tabSignup.className = 'flex-1 py-2 text-sm font-medium rounded-lg bg-neutral-800 text-white shadow-sm transition-all';
+        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all';
+        nameField.classList.remove('hidden');
+        confirmPass.classList.remove('hidden');
+        heading.innerText = 'Create your ScrubMark account';
+        submitText.innerText = 'Create Account';
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const errorBox = document.getElementById('authError');
+      const errorText = document.getElementById('authErrorText');
+
+      errorBox.classList.add('hidden');
+
+      if (currentAuthMode === 'signup') {
+        const name = document.getElementById('authName').value.trim();
+        const confirmPassword = document.getElementById('authConfirmPassword').value;
+        if (!name) {
+          errorText.innerText = 'Please enter your name.';
+          errorBox.classList.remove('hidden');
+          return;
+        }
+        if (password !== confirmPassword) {
+          errorText.innerText = 'Passwords do not match.';
+          errorBox.classList.remove('hidden');
+          return;
+        }
+        try {
+          const res = await fetch('api.php?action=register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Signup failed');
+          currentUser = data;
+          showDashboard();
+        } catch (err) {
+          errorText.innerText = err.message;
+          errorBox.classList.remove('hidden');
+        }
+      } else {
+        try {
+          const res = await fetch('api.php?action=login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Login failed');
+          currentUser = data;
+          showDashboard();
+        } catch (err) {
+          errorText.innerText = err.message;
+          errorBox.classList.remove('hidden');
+        }
+      }
+    }
+
+    async function handleLogout() {
+      await fetch('api.php?action=logout', { method: 'POST' });
+      currentUser = null;
+      showAuth();
+    }
+
+    function showAuth() {
+      document.getElementById('authView').classList.remove('hidden');
+      document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('reviewView').classList.add('hidden');
+      lucide.createIcons();
+    }
+
+    // --- DASHBOARD ---
+    async function showDashboard() {
+      document.getElementById('authView').classList.add('hidden');
+      document.getElementById('reviewView').classList.add('hidden');
+      document.getElementById('dashboardView').classList.remove('hidden');
+      document.getElementById('currentUserDisplay').innerText = currentUser.name;
+      toggleAddVideoModal(false);
+      await loadVideos();
+      lucide.createIcons();
+    }
+
+    async function loadVideos() {
+      const res = await fetch('api.php?action=videos');
+      const videos = await res.json();
+      const listEl = document.getElementById('videosList');
+      const noMsg = document.getElementById('noVideosMsg');
+      listEl.innerHTML = '';
+
+      if (!videos || videos.length === 0) {
+        noMsg.classList.remove('hidden');
+        return;
+      }
+      noMsg.classList.add('hidden');
+
+      videos.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden hover:border-neutral-700 transition-all cursor-pointer group flex flex-col';
+        card.onclick = () => openReview(v.id);
+        card.innerHTML = `
+          <div class="aspect-video bg-neutral-950 relative overflow-hidden">
+            <img src="https://img.youtube.com/vi/${v.youtube_video_id}/mqdefault.jpg" alt="${v.project_name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+          </div>
+          <div class="p-4 flex-1 flex flex-col justify-between">
+            <h3 class="font-bold text-white mb-2 text-base">${v.project_name}</h3>
+            <div class="flex items-center justify-between text-xs text-neutral-400 pt-3 border-t border-neutral-800/80">
+              <span>By ${v.owner_name}</span>
+              <span>${new Date(v.created_at).toLocaleDateString()}</span>
+            </div>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    function toggleAddVideoModal(show) {
+      const box = document.getElementById('addVideoBox');
+      if (show) {
+        box.classList.remove('hidden');
+        document.getElementById('newProjectName').focus();
+      } else {
+        box.classList.add('hidden');
+        document.getElementById('newProjectName').value = '';
+        document.getElementById('newYoutubeUrl').value = '';
+        document.getElementById('addVideoError').classList.add('hidden');
+      }
+    }
+
+    async function handleAddVideoSubmit(e) {
+      e.preventDefault();
+      const projectName = document.getElementById('newProjectName').value.trim();
+      const youtubeUrl = document.getElementById('newYoutubeUrl').value.trim();
+      const errorEl = document.getElementById('addVideoError');
+      errorEl.classList.add('hidden');
+
+      try {
+        const res = await fetch('api.php?action=add_video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project_name: projectName, youtube_url: youtubeUrl })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to add video');
+        toggleAddVideoModal(false);
+        openReview(data.id);
+      } catch (err) {
+        errorEl.innerText = err.message;
+        errorEl.classList.remove('hidden');
+      }
+    }
+
+    // --- VIDEO REVIEW WORKSPACE ---
+    async function openReview(videoId) {
+      document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('reviewView').classList.remove('hidden');
+
+      const res = await fetch(`api.php?action=video&id=${videoId}`);
+      currentVideo = await res.json();
+
+      document.getElementById('reviewProjectName').innerText = currentVideo.project_name;
+      document.getElementById('reviewUserDisplay').innerText = currentUser.name;
+
+      // Initialize YouTube Player
+      initYouTubePlayer(currentVideo.youtube_video_id);
+
+      // Fetch Comments
+      await loadComments(videoId);
+
+      // Start live time tracking loop (10x per sec)
+      if (tickerInterval) clearInterval(tickerInterval);
+      tickerInterval = setInterval(() => {
+        if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+          currentLiveTimestamp = ytPlayer.getCurrentTime() || 0;
+          document.getElementById('liveTimestampBadge').innerText = formatTime(currentLiveTimestamp);
+        }
+      }, 100);
+
+      lucide.createIcons();
+    }
+
+    function initYouTubePlayer(youtubeId) {
+      const container = document.getElementById('youtubePlayerContainer');
+      container.innerHTML = '<div id="ytIframeSlot"></div>';
+
+      if (window.YT && window.YT.Player) {
+        ytPlayer = new YT.Player('ytIframeSlot', {
+          width: '100%',
+          height: '100%',
+          videoId: youtubeId,
+          playerVars: {
+            controls: 0, // Hide native controls
+            rel: 0,
+            modestbranding: 1,
+            iv_load_policy: 3
+          }
+        });
+      } else {
+        window.onYouTubeIframeAPIReady = function() {
+          ytPlayer = new YT.Player('ytIframeSlot', {
+            width: '100%',
+            height: '100%',
+            videoId: youtubeId,
+            playerVars: { controls: 0, rel: 0, modestbranding: 1 }
+          });
+        };
+      }
+    }
+
+    function closeReview() {
+      if (tickerInterval) clearInterval(tickerInterval);
+      if (ytPlayer && ytPlayer.destroy) ytPlayer.destroy();
+      ytPlayer = null;
+      currentVideo = null;
+      showDashboard();
+    }
+
+    async function loadComments(videoId) {
+      const res = await fetch(`api.php?action=comments&video_id=${videoId}`);
+      currentNotes = await res.json();
+      renderComments();
+    }
+
+    function renderComments() {
+      const activeList = document.getElementById('activeNotesList');
+      const resolvedList = document.getElementById('resolvedNotesList');
+      const resolvedContainer = document.getElementById('resolvedContainer');
+      const badge = document.getElementById('notesCountBadge');
+
+      activeList.innerHTML = '';
+      resolvedList.innerHTML = '';
+
+      const active = currentNotes.filter(n => !n.is_resolved);
+      const resolved = currentNotes.filter(n => n.is_resolved);
+
+      badge.innerText = active.length;
+
+      if (active.length === 0) {
+        activeList.innerHTML = '<p class="text-xs text-neutral-500 italic px-1">No active notes yet.</p>';
+      } else {
+        active.forEach(note => {
+          const isOwner = currentVideo && currentVideo.user_id === currentUser.id;
+          const card = document.createElement('div');
+          card.className = 'group bg-neutral-800/60 hover:bg-neutral-800 p-3 rounded-lg border border-neutral-700/50 cursor-pointer transition-colors';
+          card.onclick = () => seekVideo(note.timestamp_seconds);
+          card.innerHTML = `
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-xs font-mono font-medium">${formatTime(note.timestamp_seconds)}</span>
+                <span class="text-xs font-medium text-neutral-300">${note.author_name}</span>
+              </div>
+              ${isOwner ? `
+                <button onclick="event.stopPropagation(); resolveNote('${note.id}')" title="Mark as resolved" class="text-neutral-500 hover:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                </button>
+              ` : ''}
+            </div>
+            <p class="text-sm text-neutral-200">${note.content}</p>
+          `;
+          activeList.appendChild(card);
+        });
+      }
+
+      if (resolved.length > 0) {
+        resolvedContainer.classList.remove('hidden');
+        resolved.forEach(note => {
+          const card = document.createElement('div');
+          card.className = 'bg-neutral-900/80 p-3 rounded-lg border border-neutral-800/80 cursor-pointer opacity-50 hover:opacity-75 transition-opacity';
+          card.onclick = () => seekVideo(note.timestamp_seconds);
+          card.innerHTML = `
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 text-xs font-mono font-medium">${formatTime(note.timestamp_seconds)}</span>
+              <span class="text-xs font-medium text-neutral-500 line-through">${note.author_name}</span>
+            </div>
+            <p class="text-sm text-neutral-400 line-through">${note.content}</p>
+          `;
+          resolvedList.appendChild(card);
+        });
+      } else {
+        resolvedContainer.classList.add('hidden');
+      }
+
+      lucide.createIcons();
+    }
+
+    function handleCommentFocus() {
+      if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+        ytPlayer.pauseVideo();
+      }
+    }
+
+    async function handlePostComment(e) {
+      e.preventDefault();
+      const text = document.getElementById('commentTextInput').value.trim();
+      if (!text || !currentVideo) return;
+
+      const res = await fetch('api.php?action=add_comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          video_id: currentVideo.id,
+          content: text,
+          timestamp_seconds: currentLiveTimestamp
+        })
+      });
+
+      if (res.ok) {
+        document.getElementById('commentTextInput').value = '';
+        await loadComments(currentVideo.id);
+      }
+    }
+
+    async function resolveNote(noteId) {
+      const res = await fetch('api.php?action=resolve_comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment_id: noteId })
+      });
+
+      if (res.ok) {
+        await loadComments(currentVideo.id);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Unable to resolve note.');
+      }
+    }
+
+    function seekVideo(seconds) {
+      if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
+        ytPlayer.seekTo(seconds, true);
+        if (typeof ytPlayer.playVideo === 'function') {
+          ytPlayer.playVideo();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
