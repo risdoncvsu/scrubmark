@@ -206,6 +206,33 @@
         <div class="flex-1 relative">
           <div id="youtubePlayerContainer" class="absolute inset-0 w-full h-full"></div>
         </div>
+        <!-- Quick Reviewer Control Bar -->
+        <div class="h-12 bg-neutral-950/95 border-t border-neutral-800 px-4 flex items-center justify-between shrink-0 text-xs text-neutral-300">
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="togglePlayPause()" title="Play / Pause (Space)" class="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white transition-colors cursor-pointer flex items-center gap-1.5">
+              <i data-lucide="play" id="quickPlayIcon" class="w-3.5 h-3.5"></i>
+              <span id="quickPlayText">Play</span>
+            </button>
+            <button type="button" onclick="seekRelative(-5)" title="Rewind 5s (← / J)" class="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span>-5s</span>
+            </button>
+            <button type="button" onclick="seekRelative(5)" title="Forward 5s (→ / L)" class="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono">
+              <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+              <span>+5s</span>
+            </button>
+            <span class="text-neutral-400 font-mono text-xs ml-2" id="quickLiveTime">0:00</span>
+          </div>
+          <div class="hidden sm:flex items-center gap-3 text-neutral-500 text-[11px]">
+            <span class="flex items-center gap-1">
+              <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">Space</kbd> Play/Pause
+            </span>
+            <span class="flex items-center gap-1">
+              <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">←</kbd>
+              <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">→</kbd> Scrub 5s
+            </span>
+          </div>
+        </div>
       </div>
 
       <!-- Notes Sidebar -->
@@ -685,6 +712,8 @@
         if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
           currentLiveTimestamp = ytPlayer.getCurrentTime() || 0;
           document.getElementById('liveTimestampBadge').innerText = formatTime(currentLiveTimestamp);
+          const quickTime = document.getElementById('quickLiveTime');
+          if (quickTime) quickTime.innerText = formatTime(currentLiveTimestamp);
         }
       }, 100);
 
@@ -701,10 +730,13 @@
           height: '100%',
           videoId: youtubeId,
           playerVars: {
-            controls: 0, // Hide native controls
+            controls: 1, // Full native YouTube controls: scrubber timeline, sound/volume slider, quality settings gear, playback speed
             rel: 0,
             modestbranding: 1,
             iv_load_policy: 3
+          },
+          events: {
+            onStateChange: onPlayerStateChange
           }
         });
       } else {
@@ -713,10 +745,59 @@
             width: '100%',
             height: '100%',
             videoId: youtubeId,
-            playerVars: { controls: 0, rel: 0, modestbranding: 1 }
+            playerVars: {
+              controls: 1,
+              rel: 0,
+              modestbranding: 1,
+              iv_load_policy: 3
+            },
+            events: {
+              onStateChange: onPlayerStateChange
+            }
           });
         };
       }
+    }
+
+    function onPlayerStateChange(event) {
+      updatePlayState(event.data === 1);
+    }
+
+    function updatePlayState(isPlaying) {
+      const icon = document.getElementById('quickPlayIcon');
+      const text = document.getElementById('quickPlayText');
+      if (icon && text) {
+        if (isPlaying) {
+          icon.setAttribute('data-lucide', 'pause');
+          text.innerText = 'Pause';
+        } else {
+          icon.setAttribute('data-lucide', 'play');
+          text.innerText = 'Play';
+        }
+        lucide.createIcons();
+      }
+    }
+
+    function togglePlayPause() {
+      if (!ytPlayer) return;
+      const state = typeof ytPlayer.getPlayerState === 'function' ? ytPlayer.getPlayerState() : -1;
+      if (state === 1) {
+        ytPlayer.pauseVideo();
+        updatePlayState(false);
+      } else {
+        ytPlayer.playVideo();
+        updatePlayState(true);
+      }
+    }
+
+    function seekRelative(deltaSeconds) {
+      if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
+      const cur = ytPlayer.getCurrentTime() || 0;
+      const nextTime = Math.max(0, cur + deltaSeconds);
+      ytPlayer.seekTo(nextTime, true);
+      currentLiveTimestamp = nextTime;
+      const quickTime = document.getElementById('quickLiveTime');
+      if (quickTime) quickTime.innerText = formatTime(nextTime);
     }
 
     function closeReview(updateHistory = true) {
@@ -913,6 +994,37 @@
         }
       });
     }
+
+    // Keyboard navigation hotkeys (Space for play/pause, Left/Right for -5s/+5s, J/L for -10s/+10s)
+    window.addEventListener('keydown', (e) => {
+      // Don't intercept if user is currently typing inside an input or textarea
+      const activeTag = document.activeElement ? document.activeElement.tagName.toUpperCase() : '';
+      if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || (document.activeElement && document.activeElement.isContentEditable)) {
+        return;
+      }
+      // Only active if review view is open
+      const reviewView = document.getElementById('reviewView');
+      if (!reviewView || reviewView.classList.contains('hidden')) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlayPause();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        seekRelative(-5);
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        seekRelative(5);
+      } else if (e.key === 'j' || e.key === 'J') {
+        seekRelative(-10);
+      } else if (e.key === 'l' || e.key === 'L') {
+        seekRelative(10);
+      } else if (e.key === 'k' || e.key === 'K') {
+        togglePlayPause();
+      }
+    });
   </script>
 </body>
 </html>

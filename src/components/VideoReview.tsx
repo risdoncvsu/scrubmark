@@ -3,7 +3,7 @@ import YouTube, { YouTubeProps } from 'react-youtube';
 import type { User, Video, Comment } from '../types';
 import { formatTime } from '../utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, MessageSquare, CheckCircle2, Play, Pause, ChevronRight, Share2, Copy, Check, X, Mail, Users } from 'lucide-react';
+import { ArrowLeft, MessageSquare, CheckCircle2, Play, Pause, ChevronRight, Share2, Copy, Check, X, Mail, Users, RotateCcw, RotateCw } from 'lucide-react';
 import clsx from 'clsx';
 
 interface VideoReviewProps {
@@ -17,6 +17,7 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [currentTimestamp, setCurrentTimestamp] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   
@@ -43,6 +44,10 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
     playerRef.current = event.target;
   };
 
+  const onPlayerStateChange: YouTubeProps['onStateChange'] = (event) => {
+    setIsPlaying(event.data === 1);
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
@@ -50,6 +55,56 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
       }
     }, 100);
     return () => clearInterval(interval);
+  }, []);
+
+  const togglePlayPause = () => {
+    if (playerRef.current) {
+      const state = typeof playerRef.current.getPlayerState === 'function' ? playerRef.current.getPlayerState() : -1;
+      if (state === 1) {
+        playerRef.current.pauseVideo();
+        setIsPlaying(false);
+      } else {
+        playerRef.current.playVideo();
+        setIsPlaying(true);
+      }
+    }
+  };
+
+  const seekRelative = (deltaSeconds: number) => {
+    if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+      const cur = playerRef.current.getCurrentTime() || 0;
+      const nextTime = Math.max(0, cur + deltaSeconds);
+      playerRef.current.seekTo(nextTime, true);
+      setCurrentTimestamp(nextTime);
+    }
+  };
+
+  // Keyboard navigation hotkeys (Space for play/pause, Left/Right for -5s/+5s, J/L for -10s/+10s)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = document.activeElement?.tagName.toUpperCase();
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement as HTMLElement)?.isContentEditable) {
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlayPause();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        seekRelative(-5);
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        seekRelative(5);
+      } else if (e.key === 'j' || e.key === 'J') {
+        seekRelative(-10);
+      } else if (e.key === 'l' || e.key === 'L') {
+        seekRelative(10);
+      } else if (e.key === 'k' || e.key === 'K') {
+        togglePlayPause();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleCommentFocus = () => {
@@ -184,18 +239,62 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                 width: '100%',
                 height: '100%',
                 playerVars: {
-                  controls: 0, // Hide native controls
+                  controls: 1, // Full native YouTube controls: scrubber timeline, volume/sound slider, quality settings gear, playback speed
                   rel: 0,
                   modestbranding: 1,
                   iv_load_policy: 3,
                 },
               }}
               onReady={onPlayerReady}
+              onStateChange={onPlayerStateChange}
               className="absolute inset-0 w-full h-full"
               iframeClassName="w-full h-full"
             />
           </div>
-          {/* Custom Minimal Controls overlay could go here, but omitted for brevity, user uses clicks/keyboard or we can add play/pause buttons */}
+          {/* Quick Reviewer Control Bar */}
+          <div className="h-12 bg-neutral-950/95 border-t border-neutral-800 px-4 flex items-center justify-between shrink-0 text-xs text-neutral-300">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={togglePlayPause}
+                title="Play / Pause (Space)"
+                className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                <span>{isPlaying ? 'Pause' : 'Play'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => seekRelative(-5)}
+                title="Rewind 5s (← / J)"
+                className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono"
+              >
+                <RotateCcw size={13} />
+                <span>-5s</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => seekRelative(5)}
+                title="Forward 5s (→ / L)"
+                className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono"
+              >
+                <RotateCw size={13} />
+                <span>+5s</span>
+              </button>
+              <span className="text-neutral-400 font-mono text-xs ml-2">
+                {formatTime(currentTimestamp)}
+              </span>
+            </div>
+            <div className="hidden sm:flex items-center gap-3 text-neutral-500 text-[11px]">
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">Space</kbd> Play/Pause
+              </span>
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">←</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">→</kbd> Scrub 5s
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Sidebar */}
