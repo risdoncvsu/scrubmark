@@ -3,7 +3,7 @@ import YouTube, { YouTubeProps } from 'react-youtube';
 import type { User, Video, Comment } from '../types';
 import { formatTime } from '../utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, MessageSquare, CheckCircle2, Play, Pause, ChevronRight } from 'lucide-react';
+import { ArrowLeft, MessageSquare, CheckCircle2, Play, Pause, ChevronRight, Share2, Copy, Check, X, Mail, Users } from 'lucide-react';
 import clsx from 'clsx';
 
 interface VideoReviewProps {
@@ -17,6 +17,8 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [currentTimestamp, setCurrentTimestamp] = useState(0);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   const playerRef = useRef<any>(null);
 
@@ -119,11 +121,32 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   const resolvedComments = comments.filter(c => c.is_resolved);
   const isOwner = video.user_id === user.id;
 
+  const shareUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}?v=${videoId}`
+    : '';
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (e) {
+      const el = document.createElement('textarea');
+      el.value = shareUrl;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
   return (
-    <div className="h-screen flex flex-col bg-neutral-900 text-white overflow-hidden">
+    <div className="h-screen flex flex-col bg-neutral-900 text-white overflow-hidden relative">
       <header className="h-14 border-b border-neutral-800 px-4 flex items-center justify-between shrink-0 bg-neutral-950">
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className="text-neutral-400 hover:text-white transition-colors" title="Back to Projects">
+          <button onClick={onBack} className="text-neutral-400 hover:text-white transition-colors cursor-pointer" title="Back to Projects">
             <ArrowLeft size={20} />
           </button>
           <div className="h-4 w-px bg-neutral-800" />
@@ -132,9 +155,22 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
             <h1 className="font-medium text-neutral-200">{video.project_name}</h1>
           </div>
         </div>
-        <div className="text-sm text-neutral-400 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-green-500" />
-          {user.name}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsShareModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold tracking-wide transition-all shadow-sm shadow-indigo-600/30 cursor-pointer"
+          >
+            <Share2 size={14} />
+            <span>Share Link</span>
+          </button>
+          <div className="h-4 w-px bg-neutral-800" />
+          <div className="text-xs text-neutral-400 flex items-center gap-1.5">
+            <span className={clsx("w-2 h-2 rounded-full", isOwner ? "bg-indigo-500" : "bg-emerald-500")} />
+            <span className="text-neutral-200 font-medium">{user.name}</span>
+            <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700/50">
+              {isOwner ? 'Owner' : 'Client Reviewer'}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -273,6 +309,86 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
           </div>
         </div>
       </div>
+
+      {/* Share Modal Dialog */}
+      <AnimatePresence>
+        {isShareModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl relative"
+            >
+              <button
+                onClick={() => setIsShareModalOpen(false)}
+                className="absolute top-4 right-4 text-neutral-400 hover:text-white p-1.5 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <Users size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Share Review Link</h2>
+                  <p className="text-xs text-neutral-400">Send this link to clients or directors to collect feedback</p>
+                </div>
+              </div>
+
+              <div className="bg-neutral-950 p-3.5 rounded-xl border border-neutral-800 mb-5">
+                <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Direct Client Review URL</div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={shareUrl}
+                    className="w-full bg-neutral-900 border border-neutral-700/80 rounded-lg px-3 py-2 text-xs text-neutral-200 select-all font-mono outline-none"
+                  />
+                  <button
+                    onClick={copyLink}
+                    className={clsx(
+                      "shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer shadow-sm",
+                      copied ? "bg-emerald-600 text-white" : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30"
+                    )}
+                  >
+                    {copied ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2.5 mb-6 text-xs text-neutral-300 bg-neutral-950/50 p-3.5 rounded-xl border border-neutral-800/60">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+                  <span><strong>Frictionless Client Review:</strong> When clients open this link, they can instantly watch the video, scrub the timeline, and leave timestamped comments without registering a password.</span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                  <span><strong>Resolution Control:</strong> Only you as the project owner can mark review comments as resolved.</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-neutral-800 text-xs">
+                <a
+                  href={`mailto:?subject=${encodeURIComponent(`Review Video: ${video.project_name}`)}&body=${encodeURIComponent(`Hi,\n\nPlease review the latest video cut for "${video.project_name}" and leave your timestamped notes here:\n\n${shareUrl}\n\nThanks!`)}`}
+                  className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 hover:underline"
+                >
+                  <Mail size={14} />
+                  <span>Send Invite via Email</span>
+                </a>
+                <button
+                  onClick={() => setIsShareModalOpen(false)}
+                  className="px-4 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium cursor-pointer transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

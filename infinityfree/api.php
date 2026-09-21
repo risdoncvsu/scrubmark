@@ -3,7 +3,7 @@
 require_once __DIR__ . '/config.php';
 
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
+header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, x-user-id, x-user-name, X-User-Id, X-User-Name');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -186,25 +186,34 @@ switch ($action) {
     case 'add_comment':
         if ($method !== 'POST') jsonResponse(['error' => 'Method not allowed'], 405);
         $user = getCurrentUser();
-        if (!$user) jsonResponse(['error' => 'Unauthorized. Please log in.'], 401);
 
         $videoId = $body['video_id'] ?? '';
         $content = trim($body['content'] ?? '');
         $timestamp = isset($body['timestamp_seconds']) ? (float)$body['timestamp_seconds'] : 0.0;
+        $authorName = trim($body['author_name'] ?? '');
 
         if (empty($videoId) || empty($content)) {
             jsonResponse(['error' => 'Video ID and content are required'], 400);
         }
 
+        // Allow authenticated user or guest reviewer
+        if ($user) {
+            $author = $user['name'];
+            $uid = $user['id'];
+        } else {
+            $author = !empty($authorName) ? $authorName : 'Client Reviewer';
+            $uid = 'client_' . bin2hex(random_bytes(6));
+        }
+
         $commentId = bin2hex(random_bytes(16));
         $stmt = $db->prepare('INSERT INTO comments (id, video_id, user_id, author_name, content, timestamp_seconds, is_resolved) VALUES (?, ?, ?, ?, ?, ?, 0)');
-        $stmt->execute([$commentId, $videoId, $user['id'], $user['name'], $content, $timestamp]);
+        $stmt->execute([$commentId, $videoId, $uid, $author, $content, $timestamp]);
 
         jsonResponse([
             'id' => $commentId,
             'video_id' => $videoId,
-            'user_id' => $user['id'],
-            'author_name' => $user['name'],
+            'user_id' => $uid,
+            'author_name' => $author,
             'content' => $content,
             'timestamp_seconds' => $timestamp,
             'is_resolved' => false,

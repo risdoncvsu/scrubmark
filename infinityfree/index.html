@@ -36,10 +36,13 @@
 
       <!-- Mode Switcher -->
       <div class="mt-6 flex bg-neutral-900/80 p-1 rounded-xl border border-neutral-800">
-        <button id="tabLogin" onclick="switchAuthMode('login')" class="flex-1 py-2 text-sm font-medium rounded-lg bg-neutral-800 text-white shadow-sm transition-all">
+        <button id="tabReviewer" type="button" onclick="switchAuthMode('reviewer')" class="hidden flex-1 py-2 text-xs font-medium rounded-lg bg-indigo-600 text-white shadow-sm transition-all">
+          Review as Client
+        </button>
+        <button id="tabLogin" type="button" onclick="switchAuthMode('login')" class="flex-1 py-2 text-xs font-medium rounded-lg bg-neutral-800 text-white shadow-sm transition-all">
           Sign In
         </button>
-        <button id="tabSignup" onclick="switchAuthMode('signup')" class="flex-1 py-2 text-sm font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all">
+        <button id="tabSignup" type="button" onclick="switchAuthMode('signup')" class="flex-1 py-2 text-xs font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all">
           Create Account
         </button>
       </div>
@@ -54,46 +57,49 @@
 
         <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
           <div id="nameFieldContainer" class="hidden">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Full Name</label>
+            <label id="nameFieldLabel" class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Full Name</label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
                 <i data-lucide="user" class="w-4 h-4"></i>
               </div>
               <input type="text" id="authName" placeholder="e.g. Alex Rivera" class="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
             </div>
+            <p id="reviewerHint" class="hidden mt-1.5 text-xs text-neutral-500">No password required. Your comments on the video will appear under this name.</p>
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Email Address</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
-                <i data-lucide="mail" class="w-4 h-4"></i>
+          <div id="emailPasswordFields" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Email Address</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                  <i data-lucide="mail" class="w-4 h-4"></i>
+                </div>
+                <input type="email" id="authEmail" placeholder="name@company.com" class="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
               </div>
-              <input type="email" id="authEmail" required placeholder="name@company.com" class="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Password</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                  <i data-lucide="lock" class="w-4 h-4"></i>
+                </div>
+                <input type="password" id="authPassword" placeholder="••••••••" class="w-full pl-9 pr-10 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+              </div>
+            </div>
+
+            <div id="confirmPasswordFieldContainer" class="hidden">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Confirm Password</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                  <i data-lucide="lock" class="w-4 h-4"></i>
+                </div>
+                <input type="password" id="authConfirmPassword" placeholder="Repeat password" class="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+              </div>
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Password</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
-                <i data-lucide="lock" class="w-4 h-4"></i>
-              </div>
-              <input type="password" id="authPassword" required placeholder="••••••••" class="w-full pl-9 pr-10 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
-            </div>
-          </div>
-
-          <div id="confirmPasswordFieldContainer" class="hidden">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">Confirm Password</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
-                <i data-lucide="lock" class="w-4 h-4"></i>
-              </div>
-              <input type="password" id="authConfirmPassword" placeholder="Repeat password" class="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
-            </div>
-          </div>
-
-          <button type="submit" id="authSubmitBtn" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors shadow-md shadow-indigo-600/30">
+          <button type="submit" id="authSubmitBtn" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors shadow-md shadow-indigo-600/30 cursor-pointer">
             <span id="authSubmitText">Sign In</span>
             <i data-lucide="arrow-right" class="w-4 h-4"></i>
           </button>
@@ -171,7 +177,7 @@
   <div id="reviewView" class="hidden h-screen flex flex-col bg-neutral-950 text-white overflow-hidden">
     <header class="h-14 border-b border-neutral-800 px-4 flex items-center justify-between shrink-0 bg-neutral-900">
       <div class="flex items-center gap-4">
-        <button onclick="closeReview()" class="text-neutral-400 hover:text-white transition-colors" title="Back to Projects">
+        <button onclick="closeReview()" class="text-neutral-400 hover:text-white transition-colors cursor-pointer" title="Back to Projects">
           <i data-lucide="arrow-left" class="w-5 h-5"></i>
         </button>
         <div class="h-4 w-px bg-neutral-800"></div>
@@ -180,9 +186,17 @@
           <h1 id="reviewProjectName" class="font-medium text-neutral-200"></h1>
         </div>
       </div>
-      <div class="text-sm text-neutral-400 flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span id="reviewUserDisplay"></span>
+      <div class="flex items-center gap-3">
+        <button onclick="openShareModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold tracking-wide transition-all shadow-sm shadow-indigo-600/30 cursor-pointer">
+          <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+          <span>Share Link</span>
+        </button>
+        <div class="h-4 w-px bg-neutral-800"></div>
+        <div class="text-xs text-neutral-400 flex items-center gap-1.5">
+          <span id="reviewUserRoleDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span id="reviewUserDisplay" class="text-neutral-200 font-medium"></span>
+          <span id="reviewUserBadge" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700/50">Owner</span>
+        </div>
       </div>
     </header>
 
@@ -246,6 +260,57 @@
     </div>
   </div>
 
+  <!-- Share Modal Dialog -->
+  <div id="shareModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+    <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl relative">
+      <button onclick="closeShareModal()" class="absolute top-4 right-4 text-neutral-400 hover:text-white p-1.5 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+          <i data-lucide="users" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">Share Review Link</h2>
+          <p class="text-xs text-neutral-400">Send this link to clients or directors to collect feedback</p>
+        </div>
+      </div>
+
+      <div class="bg-neutral-950 p-3.5 rounded-xl border border-neutral-800 mb-5">
+        <div class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Direct Client Review URL</div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="shareUrlInput" readonly class="w-full bg-neutral-900 border border-neutral-700/80 rounded-lg px-3 py-2 text-xs text-neutral-200 select-all font-mono outline-none" />
+          <button id="copyShareBtn" onclick="copyShareUrl()" class="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/30 cursor-pointer">
+            <i data-lucide="copy" class="w-3.5 h-3.5" id="copyShareBtnIcon"></i>
+            <span id="copyShareBtnText">Copy Link</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-2.5 mb-6 text-xs text-neutral-300 bg-neutral-950/50 p-3.5 rounded-xl border border-neutral-800/60">
+        <div class="flex items-start gap-2.5">
+          <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0"></div>
+          <span><strong>Frictionless Client Review:</strong> When clients open this link, they can instantly watch the video, scrub the timeline, and leave timestamped comments without registering a password.</span>
+        </div>
+        <div class="flex items-start gap-2.5">
+          <div class="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0"></div>
+          <span><strong>Resolution Control:</strong> Only you as the project owner can mark review comments as resolved.</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-4 border-t border-neutral-800 text-xs">
+        <a id="shareEmailLink" href="#" class="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 hover:underline">
+          <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+          <span>Send Invite via Email</span>
+        </a>
+        <button onclick="closeShareModal()" class="px-4 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium cursor-pointer transition-colors">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- YouTube IFrame API Script -->
   <script src="https://www.youtube.com/iframe_api"></script>
 
@@ -258,6 +323,7 @@
     let currentNotes = [];
     let currentLiveTimestamp = 0;
     let tickerInterval = null;
+    let pendingInviteVideoId = null;
 
     // Helper: format seconds to MM:SS
     function formatTime(seconds) {
@@ -269,16 +335,58 @@
     // --- APP INITIALIZATION ---
     window.addEventListener('DOMContentLoaded', async () => {
       lucide.createIcons();
+
+      // Check URL query parameters for video invite (?v=videoId)
+      const urlParams = new URLSearchParams(window.location.search);
+      const inviteVideoId = urlParams.get('v');
+
+      // Check for saved guest reviewer session
+      try {
+        const savedGuest = localStorage.getItem('scrubmark_guest');
+        if (savedGuest) {
+          currentUser = JSON.parse(savedGuest);
+        }
+      } catch (e) {}
+
+      // Check if backend session exists
       try {
         const res = await fetch('api.php?action=me');
         if (res.ok) {
           currentUser = await res.json();
+        }
+      } catch (e) {}
+
+      if (inviteVideoId) {
+        pendingInviteVideoId = inviteVideoId;
+        if (currentUser) {
+          openReview(inviteVideoId);
+        } else {
+          // Unhide Review as Client tab and display reviewer flow
+          document.getElementById('tabReviewer').classList.remove('hidden');
+          switchAuthMode('reviewer');
+          showAuth();
+        }
+      } else {
+        if (currentUser && !currentUser.id.startsWith('client_')) {
           showDashboard();
         } else {
           showAuth();
         }
-      } catch (e) {
-        showAuth();
+      }
+    });
+
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', () => {
+      const params = new URLSearchParams(window.location.search);
+      const vid = params.get('v');
+      if (vid) {
+        if (!currentVideo || currentVideo.id !== vid) {
+          openReview(vid);
+        }
+      } else {
+        if (currentVideo) {
+          closeReview(false);
+        }
       }
     });
 
@@ -288,36 +396,92 @@
       document.getElementById('authError').classList.add('hidden');
       const tabLogin = document.getElementById('tabLogin');
       const tabSignup = document.getElementById('tabSignup');
+      const tabReviewer = document.getElementById('tabReviewer');
       const nameField = document.getElementById('nameFieldContainer');
+      const nameFieldLabel = document.getElementById('nameFieldLabel');
+      const reviewerHint = document.getElementById('reviewerHint');
+      const emailPasswordFields = document.getElementById('emailPasswordFields');
       const confirmPass = document.getElementById('confirmPasswordFieldContainer');
       const heading = document.getElementById('authHeading');
       const submitText = document.getElementById('authSubmitText');
 
-      if (mode === 'login') {
-        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-lg bg-neutral-800 text-white shadow-sm transition-all';
-        tabSignup.className = 'flex-1 py-2 text-sm font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all';
-        nameField.classList.add('hidden');
+      if (mode === 'reviewer') {
+        tabReviewer.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white shadow-sm transition-all';
+        tabLogin.className = 'flex-1 py-2 text-xs font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all';
+        tabSignup.className = 'flex-1 py-2 text-xs font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all';
+        
+        nameField.classList.remove('hidden');
+        nameFieldLabel.innerText = 'Your Name / Client Title';
+        reviewerHint.classList.remove('hidden');
+        emailPasswordFields.classList.add('hidden');
         confirmPass.classList.add('hidden');
+
+        heading.innerText = 'Join Video Review';
+        submitText.innerText = 'Start Reviewing Video';
+      } else if (mode === 'login') {
+        tabLogin.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-neutral-800 text-white shadow-sm transition-all';
+        tabSignup.className = 'flex-1 py-2 text-xs font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all';
+        if (tabReviewer) tabReviewer.className = 'flex-1 py-2 text-xs font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all';
+
+        nameField.classList.add('hidden');
+        reviewerHint.classList.add('hidden');
+        emailPasswordFields.classList.remove('hidden');
+        confirmPass.classList.add('hidden');
+
         heading.innerText = 'Sign in to your workspace';
         submitText.innerText = 'Sign In';
       } else {
-        tabSignup.className = 'flex-1 py-2 text-sm font-medium rounded-lg bg-neutral-800 text-white shadow-sm transition-all';
-        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all';
+        tabSignup.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-neutral-800 text-white shadow-sm transition-all';
+        tabLogin.className = 'flex-1 py-2 text-xs font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all';
+        if (tabReviewer) tabReviewer.className = 'flex-1 py-2 text-xs font-medium rounded-lg text-neutral-400 hover:text-neutral-200 transition-all';
+
         nameField.classList.remove('hidden');
+        nameFieldLabel.innerText = 'Full Name';
+        reviewerHint.classList.add('hidden');
+        emailPasswordFields.classList.remove('hidden');
         confirmPass.classList.remove('hidden');
+
         heading.innerText = 'Create your ScrubMark account';
         submitText.innerText = 'Create Account';
       }
+      lucide.createIcons();
     }
 
     async function handleAuthSubmit(e) {
       e.preventDefault();
-      const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value;
       const errorBox = document.getElementById('authError');
       const errorText = document.getElementById('authErrorText');
-
       errorBox.classList.add('hidden');
+
+      if (currentAuthMode === 'reviewer') {
+        const name = document.getElementById('authName').value.trim();
+        if (!name) {
+          errorText.innerText = 'Please enter your name to begin reviewing.';
+          errorBox.classList.remove('hidden');
+          return;
+        }
+
+        const guestId = 'client_' + Math.random().toString(36).substring(2, 9);
+        currentUser = {
+          id: guestId,
+          name: name,
+          email: ''
+        };
+        try {
+          localStorage.setItem('scrubmark_guest', JSON.stringify(currentUser));
+        } catch (e) {}
+
+        const vidToOpen = pendingInviteVideoId || (new URLSearchParams(window.location.search)).get('v');
+        if (vidToOpen) {
+          openReview(vidToOpen);
+        } else {
+          showDashboard();
+        }
+        return;
+      }
+
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
 
       if (currentAuthMode === 'signup') {
         const name = document.getElementById('authName').value.trim();
@@ -341,7 +505,11 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Signup failed');
           currentUser = data;
-          showDashboard();
+          if (pendingInviteVideoId) {
+            openReview(pendingInviteVideoId);
+          } else {
+            showDashboard();
+          }
         } catch (err) {
           errorText.innerText = err.message;
           errorBox.classList.remove('hidden');
@@ -356,7 +524,11 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Login failed');
           currentUser = data;
-          showDashboard();
+          if (pendingInviteVideoId) {
+            openReview(pendingInviteVideoId);
+          } else {
+            showDashboard();
+          }
         } catch (err) {
           errorText.innerText = err.message;
           errorBox.classList.remove('hidden');
@@ -365,6 +537,9 @@
     }
 
     async function handleLogout() {
+      try {
+        localStorage.removeItem('scrubmark_guest');
+      } catch (e) {}
       await fetch('api.php?action=logout', { method: 'POST' });
       currentUser = null;
       showAuth();
@@ -382,7 +557,7 @@
       document.getElementById('authView').classList.add('hidden');
       document.getElementById('reviewView').classList.add('hidden');
       document.getElementById('dashboardView').classList.remove('hidden');
-      document.getElementById('currentUserDisplay').innerText = currentUser.name;
+      document.getElementById('currentUserDisplay').innerText = currentUser ? currentUser.name : '';
       toggleAddVideoModal(false);
       await loadVideos();
       lucide.createIcons();
@@ -411,7 +586,13 @@
             <div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
           </div>
           <div class="p-4 flex-1 flex flex-col justify-between">
-            <h3 class="font-bold text-white mb-2 text-base">${v.project_name}</h3>
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <h3 class="font-bold text-white mb-0 text-base line-clamp-1">${v.project_name}</h3>
+              <button onclick="copyDirectShare(event, '${v.id}')" title="Copy Client Share Link" class="shrink-0 p-1.5 rounded-lg text-neutral-400 hover:text-indigo-400 hover:bg-neutral-800 transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer">
+                <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                <span id="cardShareText-${v.id}">Share</span>
+              </button>
+            </div>
             <div class="flex items-center justify-between text-xs text-neutral-400 pt-3 border-t border-neutral-800/80">
               <span>By ${v.owner_name}</span>
               <span>${new Date(v.created_at).toLocaleDateString()}</span>
@@ -420,6 +601,7 @@
         `;
         listEl.appendChild(card);
       });
+      lucide.createIcons();
     }
 
     function toggleAddVideoModal(show) {
@@ -461,13 +643,35 @@
     // --- VIDEO REVIEW WORKSPACE ---
     async function openReview(videoId) {
       document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('authView').classList.add('hidden');
       document.getElementById('reviewView').classList.remove('hidden');
+
+      // Sync URL without reload
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.searchParams.get('v') !== videoId) {
+        currentUrl.searchParams.set('v', videoId);
+        window.history.pushState({ videoId }, '', currentUrl.toString());
+      }
 
       const res = await fetch(`api.php?action=video&id=${videoId}`);
       currentVideo = await res.json();
 
       document.getElementById('reviewProjectName').innerText = currentVideo.project_name;
-      document.getElementById('reviewUserDisplay').innerText = currentUser.name;
+      document.getElementById('reviewUserDisplay').innerText = currentUser ? currentUser.name : 'Reviewer';
+
+      // Update role badge and status dot
+      const isOwner = currentVideo && currentUser && (currentVideo.user_id === currentUser.id);
+      const badge = document.getElementById('reviewUserBadge');
+      const dot = document.getElementById('reviewUserRoleDot');
+      if (badge) {
+        badge.innerText = isOwner ? 'Owner' : 'Client Reviewer';
+        badge.className = isOwner 
+          ? 'text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' 
+          : 'text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+      }
+      if (dot) {
+        dot.className = isOwner ? 'w-2 h-2 rounded-full bg-indigo-500' : 'w-2 h-2 rounded-full bg-emerald-500';
+      }
 
       // Initialize YouTube Player
       initYouTubePlayer(currentVideo.youtube_video_id);
@@ -515,12 +719,23 @@
       }
     }
 
-    function closeReview() {
+    function closeReview(updateHistory = true) {
       if (tickerInterval) clearInterval(tickerInterval);
       if (ytPlayer && ytPlayer.destroy) ytPlayer.destroy();
       ytPlayer = null;
       currentVideo = null;
-      showDashboard();
+
+      if (updateHistory) {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('v');
+        window.history.pushState({}, '', currentUrl.toString());
+      }
+
+      if (currentUser && !currentUser.id.startsWith('client_')) {
+        showDashboard();
+      } else {
+        showAuth();
+      }
     }
 
     async function loadComments(videoId) {
@@ -547,7 +762,7 @@
         activeList.innerHTML = '<p class="text-xs text-neutral-500 italic px-1">No active notes yet.</p>';
       } else {
         active.forEach(note => {
-          const isOwner = currentVideo && currentVideo.user_id === currentUser.id;
+          const isOwner = currentVideo && currentUser && (currentVideo.user_id === currentUser.id);
           const card = document.createElement('div');
           card.className = 'group bg-neutral-800/60 hover:bg-neutral-800 p-3 rounded-lg border border-neutral-700/50 cursor-pointer transition-colors';
           card.onclick = () => seekVideo(note.timestamp_seconds);
@@ -558,7 +773,7 @@
                 <span class="text-xs font-medium text-neutral-300">${note.author_name}</span>
               </div>
               ${isOwner ? `
-                <button onclick="event.stopPropagation(); resolveNote('${note.id}')" title="Mark as resolved" class="text-neutral-500 hover:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="event.stopPropagation(); resolveNote('${note.id}')" title="Mark as resolved" class="text-neutral-500 hover:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                   <i data-lucide="check-circle-2" class="w-4 h-4"></i>
                 </button>
               ` : ''}
@@ -602,11 +817,19 @@
       const text = document.getElementById('commentTextInput').value.trim();
       if (!text || !currentVideo) return;
 
+      const userName = currentUser ? currentUser.name : 'Client Reviewer';
+      const userId = currentUser ? currentUser.id : ('client_' + Math.random().toString(36).substring(2, 9));
+
       const res = await fetch('api.php?action=add_comment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId,
+          'x-user-name': userName
+        },
         body: JSON.stringify({
           video_id: currentVideo.id,
+          author_name: userName,
           content: text,
           timestamp_seconds: currentLiveTimestamp
         })
@@ -629,7 +852,7 @@
         await loadComments(currentVideo.id);
       } else {
         const err = await res.json();
-        alert(err.error || 'Unable to resolve note.');
+        alert(err.error || 'Unable to resolve note. Only the project owner can resolve notes.');
       }
     }
 
@@ -640,6 +863,55 @@
           ytPlayer.playVideo();
         }
       }
+    }
+
+    // --- SHARE LINK HELPERS ---
+    function openShareModal() {
+      if (!currentVideo) return;
+      const modal = document.getElementById('shareModal');
+      const urlInput = document.getElementById('shareUrlInput');
+      const emailLink = document.getElementById('shareEmailLink');
+      const shareUrl = `${window.location.origin}${window.location.pathname}?v=${currentVideo.id}`;
+      urlInput.value = shareUrl;
+
+      const emailSubject = encodeURIComponent(`Review video cut: ${currentVideo.project_name}`);
+      const emailBody = encodeURIComponent(`Hi,\n\nPlease review the video cut for "${currentVideo.project_name}" and leave your timestamped feedback directly on the timeline here:\n\n${shareUrl}\n\nThanks!`);
+      emailLink.href = `mailto:?subject=${emailSubject}&body=${emailBody}`;
+
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeShareModal() {
+      document.getElementById('shareModal').classList.add('hidden');
+    }
+
+    function copyShareUrl() {
+      const urlInput = document.getElementById('shareUrlInput');
+      urlInput.select();
+      navigator.clipboard.writeText(urlInput.value).then(() => {
+        const btnText = document.getElementById('copyShareBtnText');
+        btnText.innerText = 'Copied!';
+        setTimeout(() => {
+          btnText.innerText = 'Copy Link';
+        }, 2000);
+      });
+    }
+
+    function copyDirectShare(e, videoId) {
+      e.stopPropagation();
+      const shareUrl = `${window.location.origin}${window.location.pathname}?v=${videoId}`;
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        const btnText = document.getElementById(`cardShareText-${videoId}`);
+        if (btnText) {
+          btnText.innerText = 'Copied!';
+          btnText.classList.add('text-emerald-400');
+          setTimeout(() => {
+            btnText.innerText = 'Share';
+            btnText.classList.remove('text-emerald-400');
+          }, 2000);
+        }
+      });
     }
   </script>
 </body>

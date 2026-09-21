@@ -203,16 +203,21 @@ async function startServer() {
 
   // POST /api/videos/:id/comments - Add a new comment at a timestamp
   app.post('/api/videos/:id/comments', (req, res) => {
-    const { content, timestamp_seconds } = req.body;
-    if (!req.userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { content, timestamp_seconds, author_name } = req.body;
+    const author = req.userName || author_name || 'Client Reviewer';
+    const uid = req.userId || 'reviewer_' + crypto.randomUUID().slice(0, 8);
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'Comment content is required' });
+    }
     
     const newComment = {
       id: crypto.randomUUID(),
       video_id: req.params.id,
-      user_id: req.userId,
-      author_name: req.userName,
-      content,
-      timestamp_seconds,
+      user_id: uid,
+      author_name: author,
+      content: content.trim(),
+      timestamp_seconds: Number(timestamp_seconds) || 0,
       is_resolved: false,
       created_at: new Date().toISOString()
     };

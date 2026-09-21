@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { User, Video } from '../types';
 import { extractYouTubeID } from '../utils';
-import { Plus, Video as VideoIcon, Clock, ChevronRight, User as UserIcon } from 'lucide-react';
+import { Plus, Video as VideoIcon, Clock, ChevronRight, User as UserIcon, Share2, Check } from 'lucide-react';
 
 interface DashboardProps {
   user: User;
@@ -16,6 +16,25 @@ export function Dashboard({ user, onSelectVideo, onLogout }: DashboardProps) {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyShare = (e: React.MouseEvent, videoId: string) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}${window.location.pathname}?v=${videoId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(videoId);
+      setTimeout(() => setCopiedId(null), 2500);
+    }).catch(() => {
+      const el = document.createElement('textarea');
+      el.value = url;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopiedId(videoId);
+      setTimeout(() => setCopiedId(null), 2500);
+    });
+  };
 
   const fetchVideos = async () => {
     try {
@@ -177,8 +196,28 @@ export function Dashboard({ user, onSelectVideo, onLogout }: DashboardProps) {
                   <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
                 </div>
                 <div className="p-4 flex-1 flex flex-col">
-                  <h3 className="font-bold text-neutral-900 mb-1">{video.project_name}</h3>
-                  <div className="flex items-center text-xs text-neutral-500 mt-auto pt-4 gap-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="font-bold text-neutral-900 text-base line-clamp-1">{video.project_name}</h3>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopyShare(e, video.id)}
+                      title="Copy Client Share Link"
+                      className="shrink-0 p-1.5 rounded-lg text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer"
+                    >
+                      {copiedId === video.id ? (
+                        <>
+                          <Check size={14} className="text-emerald-600" />
+                          <span className="text-emerald-600 font-semibold">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 size={14} />
+                          <span>Share</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex items-center text-xs text-neutral-500 mt-auto pt-3 border-t border-neutral-100 gap-4">
                     <span className="flex items-center gap-1">
                       <UserIcon size={14} className="opacity-50" />
                       {video.owner_name}

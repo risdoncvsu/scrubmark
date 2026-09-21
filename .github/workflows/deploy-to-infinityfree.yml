@@ -1,0 +1,31 @@
+name: Deploy to InfinityFree
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'infinityfree/**'
+
+jobs:
+  ftp-deploy:
+    name: Sync infinityfree folder to InfinityFree htdocs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Upload to InfinityFree via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./infinityfree/
+          server-dir: ./htdocs/
+          # Exclude config.php so your working database password on InfinityFree is not overwritten
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/config.php

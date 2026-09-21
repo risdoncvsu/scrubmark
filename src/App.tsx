@@ -6,7 +6,13 @@ import type { User } from './types';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('v');
+    }
+    return null;
+  });
 
   // Hydrate user from localStorage
   useEffect(() => {
@@ -20,6 +26,27 @@ export default function App() {
     }
   }, []);
 
+  // Sync URL search params with activeVideoId and handle popstate (browser back/forward)
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      setActiveVideoId(params.get('v'));
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleSelectVideo = (videoId: string | null) => {
+    setActiveVideoId(videoId);
+    if (videoId) {
+      const newUrl = `${window.location.pathname}?v=${videoId}`;
+      window.history.pushState(null, '', newUrl);
+    } else {
+      window.history.pushState(null, '', window.location.pathname);
+    }
+  };
+
   const handleLogin = (newUser: User) => {
     setUser(newUser);
     localStorage.setItem('scrubmark_user', JSON.stringify(newUser));
@@ -27,13 +54,13 @@ export default function App() {
 
   const handleLogout = () => {
     setUser(null);
-    setActiveVideoId(null);
+    handleSelectVideo(null);
     localStorage.removeItem('scrubmark_user');
     localStorage.removeItem('frameio_user');
   };
 
   if (!user) {
-    return <Auth onLogin={handleLogin} />;
+    return <Auth onLogin={handleLogin} inviteVideoId={activeVideoId} />;
   }
 
   if (activeVideoId) {
@@ -41,7 +68,7 @@ export default function App() {
       <VideoReview 
         videoId={activeVideoId} 
         user={user} 
-        onBack={() => setActiveVideoId(null)} 
+        onBack={() => handleSelectVideo(null)} 
       />
     );
   }
@@ -49,7 +76,7 @@ export default function App() {
   return (
     <Dashboard 
       user={user} 
-      onSelectVideo={setActiveVideoId} 
+      onSelectVideo={handleSelectVideo} 
       onLogout={handleLogout} 
     />
   );

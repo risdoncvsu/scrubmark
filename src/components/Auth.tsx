@@ -4,10 +4,11 @@ import { Video, Mail, Lock, User as UserIcon, ArrowRight, Eye, EyeOff, CheckCirc
 
 interface AuthProps {
   onLogin: (user: User) => void;
+  inviteVideoId?: string | null;
 }
 
-export function Auth({ onLogin }: AuthProps) {
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+export function Auth({ onLogin, inviteVideoId }: AuthProps) {
+  const [mode, setMode] = useState<'reviewer' | 'login' | 'signup'>(inviteVideoId ? 'reviewer' : 'login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +20,20 @@ export function Auth({ onLogin }: AuthProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (mode === 'reviewer') {
+      if (!name.trim()) {
+        setError('Please enter your name to begin reviewing.');
+        return;
+      }
+      const clientUser: User = {
+        id: 'client_' + crypto.randomUUID().slice(0, 8),
+        name: name.trim(),
+        email: ''
+      };
+      onLogin(clientUser);
+      return;
+    }
 
     if (mode === 'signup') {
       if (!name.trim()) {
@@ -85,18 +100,37 @@ export function Auth({ onLogin }: AuthProps) {
           <span className="text-2xl font-black tracking-tight text-white">ScrubMark</span>
         </div>
         <h2 className="text-center text-xl sm:text-2xl font-bold tracking-tight text-neutral-200">
-          {mode === 'login' ? 'Sign in to your workspace' : 'Create your ScrubMark account'}
+          {mode === 'reviewer' 
+            ? 'Join Video Review' 
+            : mode === 'login' 
+              ? 'Sign in to your workspace' 
+              : 'Create your ScrubMark account'}
         </h2>
         <p className="mt-2 text-center text-sm text-neutral-400">
-          Precise, timestamp-synchronized video review and feedback.
+          {mode === 'reviewer'
+            ? "You've been invited to review this video project. Enter your name to leave timestamped feedback."
+            : "Precise, timestamp-synchronized video review and feedback."}
         </p>
 
         {/* Tab switchers */}
         <div className="mt-6 flex bg-neutral-900/80 p-1 rounded-xl border border-neutral-800">
+          {inviteVideoId && (
+            <button
+              type="button"
+              onClick={() => { setMode('reviewer'); setError(null); }}
+              className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+                mode === 'reviewer'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+            >
+              Review as Client
+            </button>
+          )}
           <button
             type="button"
             onClick={() => { setMode('login'); setError(null); }}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
               mode === 'login'
                 ? 'bg-neutral-800 text-white shadow-sm'
                 : 'text-neutral-400 hover:text-neutral-200'
@@ -107,7 +141,7 @@ export function Auth({ onLogin }: AuthProps) {
           <button
             type="button"
             onClick={() => { setMode('signup'); setError(null); }}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
               mode === 'signup'
                 ? 'bg-neutral-800 text-white shadow-sm'
                 : 'text-neutral-400 hover:text-neutral-200'
@@ -128,6 +162,31 @@ export function Auth({ onLogin }: AuthProps) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === 'reviewer' && (
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
+                  Your Name / Client Title
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                    <UserIcon size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Sarah (Client)"
+                    className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                  />
+                </div>
+                <p className="mt-2 text-xs text-neutral-500">
+                  No password needed. Your notes and timestamp comments will be labeled with this name.
+                </p>
+              </div>
+            )}
+
             {mode === 'signup' && (
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
@@ -149,50 +208,54 @@ export function Auth({ onLogin }: AuthProps) {
               </div>
             )}
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-                Email Address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
-                  <Mail size={16} />
+            {mode !== 'reviewer' && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                      <Mail size={16} />
+                    </div>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@company.com"
+                      className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                    />
+                  </div>
                 </div>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-                />
-              </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
-                  <Lock size={16} />
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                      <Lock size={16} />
+                    </div>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
+                      className="w-full pl-9 pr-10 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-500 hover:text-neutral-300 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
-                  className="w-full pl-9 pr-10 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-500 hover:text-neutral-300"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
+              </>
+            )}
 
             {mode === 'signup' && (
               <div>
@@ -224,7 +287,13 @@ export function Auth({ onLogin }: AuthProps) {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>{mode === 'login' ? 'Sign In' : 'Create Account'}</span>
+                  <span>
+                    {mode === 'reviewer' 
+                      ? 'Open Video Review' 
+                      : mode === 'login' 
+                        ? 'Sign In' 
+                        : 'Create Account'}
+                  </span>
                   <ArrowRight size={16} />
                 </>
               )}
@@ -232,16 +301,18 @@ export function Auth({ onLogin }: AuthProps) {
           </form>
 
           {/* Quick Demo Login Option */}
-          <div className="mt-6 pt-6 border-t border-neutral-800/80">
-            <button
-              type="button"
-              onClick={fillDemoAccount}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-neutral-700/60 bg-neutral-800/40 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
-            >
-              <Sparkles size={14} className="text-amber-400" />
-              <span>Fill 1-Click Demo Account (demo@scrubmark.com)</span>
-            </button>
-          </div>
+          {mode !== 'reviewer' && (
+            <div className="mt-6 pt-6 border-t border-neutral-800/80">
+              <button
+                type="button"
+                onClick={fillDemoAccount}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-neutral-700/60 bg-neutral-800/40 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors cursor-pointer"
+              >
+                <Sparkles size={14} className="text-amber-400" />
+                <span>Fill 1-Click Demo Account (demo@scrubmark.com)</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Feature Highlights */}

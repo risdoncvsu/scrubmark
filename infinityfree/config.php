@@ -53,5 +53,19 @@ function getCurrentUser() {
     if (isset($_SESSION['user']) && !empty($_SESSION['user']['id'])) {
         return $_SESSION['user'];
     }
+    
+    // Also check headers sent by frontend (e.g., in client reviewer mode)
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
+    $userId = $headers['x-user-id'] ?? $headers['X-User-Id'] ?? $_SERVER['HTTP_X_USER_ID'] ?? null;
+    $userName = $headers['x-user-name'] ?? $headers['X-User-Name'] ?? $_SERVER['HTTP_X_USER_NAME'] ?? null;
+    
+    if ($userId) {
+        return [
+            'id' => $userId,
+            'name' => $userName ?: 'Reviewer',
+            'email' => ''
+        ];
+    }
+
     return null;
 }
