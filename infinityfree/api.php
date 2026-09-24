@@ -20,6 +20,14 @@ $body = json_decode($rawBody, true) ?: [];
 
 $db = getDbConnection();
 
+// Auto-upgrade database schema for Google Drive support if needed
+try {
+    $db->exec("ALTER TABLE videos MODIFY COLUMN youtube_video_id VARCHAR(255) NOT NULL");
+} catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE videos ADD COLUMN source_type VARCHAR(32) DEFAULT 'youtube'");
+} catch (Exception $e) {}
+
 switch ($action) {
     // -------------------------------------------------------------
     // AUTHENTICATION: REGISTER
@@ -116,8 +124,13 @@ switch ($action) {
     // VIDEOS: LIST ALL VIDEOS
     // -------------------------------------------------------------
     case 'videos':
-        $stmt = $db->query('SELECT id, youtube_video_id, project_name, user_id, owner_name, created_at FROM videos ORDER BY created_at DESC');
-        $videos = $stmt->fetchAll();
+        try {
+            $stmt = $db->query("SELECT id, youtube_video_id, COALESCE(source_type, 'youtube') as source_type, project_name, user_id, owner_name, created_at FROM videos ORDER BY created_at DESC");
+            $videos = $stmt->fetchAll();
+        } catch (Exception $e) {
+            $stmt = $db->query('SELECT id, youtube_video_id, project_name, user_id, owner_name, created_at FROM videos ORDER BY created_at DESC');
+            $videos = $stmt->fetchAll();
+        }
         jsonResponse($videos);
         break;
 
@@ -126,9 +139,15 @@ switch ($action) {
     // -------------------------------------------------------------
     case 'video':
         $id = $_GET['id'] ?? '';
-        $stmt = $db->prepare('SELECT id, youtube_video_id, project_name, user_id, owner_name, created_at FROM videos WHERE id = ?');
-        $stmt->execute([$id]);
-        $video = $stmt->fetch();
+        try {
+            $stmt = $db->prepare("SELECT id, youtube_video_id, COALESCE(source_type, 'youtube') as source_type, project_name, user_id, owner_name, created_at FROM videos WHERE id = ?");
+            $stmt->execute([$id]);
+            $video = $stmt->fetch();
+        } catch (Exception $e) {
+            $stmt = $db->prepare('SELECT id, youtube_video_id, project_name, user_id, owner_name, created_at FROM videos WHERE id = ?');
+            $stmt->execute([$id]);
+            $video = $stmt->fetch();
+        }
         if (!$video) {
             jsonResponse(['error' => 'Video not found'], 404);
         }
@@ -136,7 +155,7 @@ switch ($action) {
         break;
 
     // -------------------------------------------------------------
-    // VIDEOS: ADD VIDEO
+    // VIDEOS: ADD VIDEO (YOUTUBE OR GOOGLE DRIVE)
     // -------------------------------------------------------------
     case 'add_video':
         if ($method !== 'POST') jsonResponse(['error' => 'Method not allowed'], 405);
@@ -144,23 +163,45 @@ switch ($action) {
         if (!$user) jsonResponse(['error' => 'Unauthorized. Please log in.'], 401);
 
         $projectName = trim($body['project_name'] ?? '');
-        $youtubeUrl = trim($body['youtube_url'] ?? '');
+        $videoUrl = trim($body['video_url'] ?? $body['youtube_url'] ?? '');
 
-        if (empty($projectName) || empty($youtubeUrl)) {
-            jsonResponse(['error' => 'Project name and YouTube URL are required'], 400);
+        if (empty($projectName) || empty($videoUrl)) {
+            jsonResponse(['error' => 'Project name and Video URL are required'], 400);
         }
 
-        // Extract YouTube ID via regex
-        preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i', $youtubeUrl, $match);
-        $youtubeId = $match[1] ?? null;
+        $sourceType = 'youtube';
+        $sourceId = null;
 
-        if (!$youtubeId) {
-            jsonResponse(['error' => 'Invalid YouTube URL'], 400);
+        // 1. YouTube Match
+        if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i', $videoUrl, $match)) {
+            $sourceType = 'youtube';
+            $sourceId = $match[1];
+        }
+        // 2. Google Drive Match
+        elseif (
+            preg_match('/(?:drive|docs)\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]{20,})/i', $videoUrl, $match) ||
+            preg_match('/[?&]id=([a-zA-Z0-9_-]{20,})/i', $videoUrl, $match) ||
+            preg_match('/\/file\/d\/([a-zA-Z0-9_-]+)/i', $videoUrl, $match)
+        ) {
+            $sourceType = 'google_drive';
+            $sourceId = $match[1];
+        }
+        // 3. Direct Video Link Match
+        elseif (preg_match('/^https?:\/\/.*?\.(mp4|webm|mov|ogg)(\?.*)?$/i', $videoUrl)) {
+            $sourceType = 'direct';
+            $sourceId = $videoUrl;
+        } else {
+            jsonResponse(['error' => 'Please provide a valid YouTube URL or Google Drive link.'], 400);
         }
 
         $videoId = bin2hex(random_bytes(16));
-        $stmt = $db->prepare('INSERT INTO videos (id, youtube_video_id, project_name, user_id, owner_name) VALUES (?, ?, ?, ?, ?)');
-        $stmt->execute([$videoId, $youtubeId, $projectName, $user['id'], $user['name']]);
+        try {
+            $stmt = $db->prepare('INSERT INTO videos (id, youtube_video_id, source_type, project_name, user_id, owner_name) VALUES (?, ?, ?, ?, ?, ?)');
+            $stmt->execute([$videoId, $sourceId, $sourceType, $projectName, $user['id'], $user['name']]);
+        } catch (Exception $e) {
+            $stmt = $db->prepare('INSERT INTO videos (id, youtube_video_id, project_name, user_id, owner_name) VALUES (?, ?, ?, ?, ?)');
+            $stmt->execute([$videoId, $sourceId, $projectName, $user['id'], $user['name']]);
+        }
 
         jsonResponse(['id' => $videoId]);
         break;

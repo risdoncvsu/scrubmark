@@ -7,6 +7,7 @@ export interface User {
 export interface Video {
   id: string;
   youtube_video_id: string;
+  source_type?: 'youtube' | 'google_drive' | 'direct';
   project_name: string;
   user_id: string;
   owner_name: string;

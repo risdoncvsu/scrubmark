@@ -157,13 +157,21 @@ async function startServer() {
 
   // POST /api/videos - Ingest a new video
   app.post('/api/videos', (req, res) => {
-    const { youtube_video_id, project_name } = req.body;
+    const { youtube_video_id, project_name, source_type } = req.body;
     if (!req.userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!youtube_video_id || !project_name) {
+      return res.status(400).json({ error: 'Video ID and project name are required' });
+    }
     
+    // Auto-detect source_type if not provided
+    const resolvedSourceType = source_type || 
+      (youtube_video_id.length > 20 ? 'google_drive' : 'youtube');
+
     const newVideo = {
       id: crypto.randomUUID(),
       youtube_video_id,
-      project_name,
+      source_type: resolvedSourceType,
+      project_name: project_name.trim(),
       user_id: req.userId,
       owner_name: req.userName,
       created_at: new Date().toISOString()

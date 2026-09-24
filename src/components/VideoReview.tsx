@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import YouTube, { YouTubeProps } from 'react-youtube';
 import type { User, Video, Comment } from '../types';
-import { formatTime } from '../utils';
+import { formatTime, parseTimeString } from '../utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, MessageSquare, CheckCircle2, Play, Pause, ChevronRight, Share2, Copy, Check, X, Mail, Users, RotateCcw, RotateCw } from 'lucide-react';
+import { ArrowLeft, MessageSquare, CheckCircle2, Play, Pause, ChevronRight, Share2, Copy, Check, X, Mail, Users, RotateCcw, RotateCw, Cloud, Youtube, ExternalLink, Edit3, Timer } from 'lucide-react';
 import clsx from 'clsx';
 
 interface VideoReviewProps {
@@ -21,7 +21,15 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   
+  // Google Drive states
+  const [isSyncTimerRunning, setIsSyncTimerRunning] = useState(false);
+  const [isEditingTime, setIsEditingTime] = useState(false);
+  const [timeInputStr, setTimeInputStr] = useState('0:00');
+  const [jumpNotice, setJumpNotice] = useState<string | null>(null);
+
   const playerRef = useRef<any>(null);
+
+  const isDrive = video ? (video.source_type === 'google_drive' || (video.youtube_video_id && video.youtube_video_id.length > 20)) : false;
 
   const fetchVideoData = async () => {
     try {
@@ -49,15 +57,30 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   };
 
   useEffect(() => {
+    if (isDrive) return;
     const interval = setInterval(() => {
       if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
         setCurrentTimestamp(playerRef.current.getCurrentTime());
       }
     }, 100);
     return () => clearInterval(interval);
-  }, []);
+  }, [isDrive]);
+
+  // Google Drive sync stopwatch tracker
+  useEffect(() => {
+    if (!isDrive || !isSyncTimerRunning) return;
+    const interval = setInterval(() => {
+      setCurrentTimestamp(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isDrive, isSyncTimerRunning]);
 
   const togglePlayPause = () => {
+    if (isDrive) {
+      setIsSyncTimerRunning(prev => !prev);
+      return;
+    }
+
     if (playerRef.current) {
       const state = typeof playerRef.current.getPlayerState === 'function' ? playerRef.current.getPlayerState() : -1;
       if (state === 1) {
@@ -71,6 +94,11 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   };
 
   const seekRelative = (deltaSeconds: number) => {
+    if (isDrive) {
+      setCurrentTimestamp(prev => Math.max(0, prev + deltaSeconds));
+      return;
+    }
+
     if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
       const cur = playerRef.current.getCurrentTime() || 0;
       const nextTime = Math.max(0, cur + deltaSeconds);
@@ -105,14 +133,31 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isDrive, isSyncTimerRunning]);
 
   const handleCommentFocus = () => {
+    if (isDrive) {
+      setIsSyncTimerRunning(false);
+      return;
+    }
+
     if (playerRef.current) {
       // Pause video and get exact timestamp
       playerRef.current.pauseVideo();
       setCurrentTimestamp(playerRef.current.getCurrentTime());
     }
+  };
+
+  const handleTimeInputSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const parsed = parseTimeString(timeInputStr);
+    if (parsed !== null) {
+      setCurrentTimestamp(parsed);
+      if (!isDrive && playerRef.current && typeof playerRef.current.seekTo === 'function') {
+        playerRef.current.seekTo(parsed, true);
+      }
+    }
+    setIsEditingTime(false);
   };
 
   const submitComment = async (e: React.FormEvent) => {
@@ -164,7 +209,11 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   };
 
   const jumpToTime = (seconds: number) => {
-    if (playerRef.current) {
+    setCurrentTimestamp(seconds);
+    if (isDrive) {
+      setJumpNotice(`📌 Note at ${formatTime(seconds)} — scrub Drive player timeline to ${formatTime(seconds)}`);
+      setTimeout(() => setJumpNotice(null), 4000);
+    } else if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
       playerRef.current.seekTo(seconds, true);
       playerRef.current.playVideo();
     }
@@ -198,121 +247,240 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-neutral-900 text-white overflow-hidden relative">
-      <header className="h-14 border-b border-neutral-800 px-4 flex items-center justify-between shrink-0 bg-neutral-950">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="text-neutral-400 hover:text-white transition-colors cursor-pointer" title="Back to Projects">
-            <ArrowLeft size={20} />
+    <div className="h-[100dvh] flex flex-col bg-neutral-900 text-white overflow-hidden relative">
+      <header className="h-13 sm:h-14 border-b border-neutral-800 px-3 sm:px-4 flex items-center justify-between shrink-0 bg-neutral-950">
+        <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
+          <button onClick={onBack} className="p-1.5 -ml-1 text-neutral-400 hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-neutral-800 shrink-0" title="Back to Projects">
+            <ArrowLeft size={18} />
           </button>
-          <div className="h-4 w-px bg-neutral-800" />
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">ScrubMark</span>
-            <h1 className="font-medium text-neutral-200">{video.project_name}</h1>
+          <div className="h-4 w-px bg-neutral-800 shrink-0" />
+          <div className="flex items-center gap-2 min-w-0">
+            {isDrive ? (
+              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 shrink-0">
+                <Cloud size={12} /> Google Drive
+              </span>
+            ) : (
+              <span className="hidden sm:inline-flex text-xs font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 shrink-0">
+                ScrubMark
+              </span>
+            )}
+            <h1 className="font-medium text-neutral-200 text-sm sm:text-base truncate max-w-[130px] xs:max-w-[180px] sm:max-w-xs md:max-w-md">
+              {video.project_name}
+            </h1>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {isDrive && (
+            <a
+              href={`https://drive.google.com/file/d/${video.youtube_video_id}/view`}
+              target="_blank"
+              rel="noreferrer"
+              title="Open directly in Google Drive"
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-xs font-medium transition-colors"
+            >
+              <ExternalLink size={13} />
+              <span>Drive Link</span>
+            </a>
+          )}
           <button
             onClick={() => setIsShareModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold tracking-wide transition-all shadow-sm shadow-indigo-600/30 cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold tracking-wide transition-all shadow-sm shadow-indigo-600/30 cursor-pointer"
           >
             <Share2 size={14} />
-            <span>Share Link</span>
+            <span className="hidden xs:inline">Share</span>
           </button>
-          <div className="h-4 w-px bg-neutral-800" />
+          <div className="h-4 w-px bg-neutral-800 hidden xs:block" />
           <div className="text-xs text-neutral-400 flex items-center gap-1.5">
-            <span className={clsx("w-2 h-2 rounded-full", isOwner ? "bg-indigo-500" : "bg-emerald-500")} />
-            <span className="text-neutral-200 font-medium">{user.name}</span>
-            <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700/50">
+            <span className={clsx("w-2 h-2 rounded-full shrink-0", isOwner ? "bg-indigo-500" : "bg-emerald-500")} />
+            <span className="text-neutral-200 font-medium truncate max-w-[75px] sm:max-w-[120px]">{user.name}</span>
+            <span className="hidden md:inline-flex text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700/50">
               {isOwner ? 'Owner' : 'Client Reviewer'}
             </span>
           </div>
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
         {/* Main Video Area */}
-        <div className="flex-1 flex flex-col relative bg-black">
-          <div className="flex-1 relative">
-            <YouTube
-              videoId={video.youtube_video_id}
-              opts={{
-                width: '100%',
-                height: '100%',
-                playerVars: {
-                  controls: 1, // Full native YouTube controls: scrubber timeline, volume/sound slider, quality settings gear, playback speed
-                  rel: 0,
-                  modestbranding: 1,
-                  iv_load_policy: 3,
-                },
-              }}
-              onReady={onPlayerReady}
-              onStateChange={onPlayerStateChange}
-              className="absolute inset-0 w-full h-full"
-              iframeClassName="w-full h-full"
-            />
+        <div className="w-full md:flex-1 flex flex-col shrink-0 md:shrink relative bg-black">
+          <div className="w-full aspect-video md:aspect-auto md:flex-1 relative bg-black max-h-[38vh] sm:max-h-[44vh] md:max-h-none">
+            {isDrive ? (
+              <iframe
+                src={`https://drive.google.com/file/d/${video.youtube_video_id}/preview`}
+                className="absolute inset-0 w-full h-full border-0"
+                allow="autoplay; encrypted-media; fullscreen"
+                allowFullScreen
+                title={video.project_name}
+              />
+            ) : (
+              <YouTube
+                videoId={video.youtube_video_id}
+                opts={{
+                  width: '100%',
+                  height: '100%',
+                  playerVars: {
+                    controls: 1, // Full native YouTube controls: scrubber timeline, volume/sound slider, quality settings gear, playback speed
+                    rel: 0,
+                    modestbranding: 1,
+                    iv_load_policy: 3,
+                    playsinline: 1, // Crucial for inline playback on iOS mobile browsers
+                  },
+                }}
+                onReady={onPlayerReady}
+                onStateChange={onPlayerStateChange}
+                className="absolute inset-0 w-full h-full"
+                iframeClassName="w-full h-full"
+              />
+            )}
+
+            {/* Jump Notice Overlay for Google Drive */}
+            {jumpNotice && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-neutral-900/95 text-indigo-300 border border-indigo-500/40 px-3.5 py-1.5 rounded-lg text-xs font-mono shadow-xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 flex items-center gap-2">
+                <span>{jumpNotice}</span>
+              </div>
+            )}
           </div>
           {/* Quick Reviewer Control Bar */}
-          <div className="h-12 bg-neutral-950/95 border-t border-neutral-800 px-4 flex items-center justify-between shrink-0 text-xs text-neutral-300">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={togglePlayPause}
-                title="Play / Pause (Space)"
-                className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-                <span>{isPlaying ? 'Pause' : 'Play'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => seekRelative(-5)}
-                title="Rewind 5s (← / J)"
-                className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono"
-              >
-                <RotateCcw size={13} />
-                <span>-5s</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => seekRelative(5)}
-                title="Forward 5s (→ / L)"
-                className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono"
-              >
-                <RotateCw size={13} />
-                <span>+5s</span>
-              </button>
-              <span className="text-neutral-400 font-mono text-xs ml-2">
-                {formatTime(currentTimestamp)}
-              </span>
+          <div className="h-11 sm:h-12 bg-neutral-950/95 border-y md:border-b-0 md:border-t border-neutral-800 px-3 sm:px-4 flex items-center justify-between shrink-0 text-xs text-neutral-300">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {isDrive ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={togglePlayPause}
+                    title="Toggle Note Time Tracker"
+                    className={clsx(
+                      "px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium",
+                      isSyncTimerRunning
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                        : "bg-neutral-800 hover:bg-neutral-700 text-white"
+                    )}
+                  >
+                    <Timer size={14} />
+                    <span>{isSyncTimerRunning ? 'Stop Tracker' : 'Start Tracker'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => seekRelative(-5)}
+                    title="Rewind 5s"
+                    className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono text-xs"
+                  >
+                    <RotateCcw size={13} />
+                    <span>-5s</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => seekRelative(5)}
+                    title="Forward 5s"
+                    className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono text-xs"
+                  >
+                    <RotateCw size={13} />
+                    <span>+5s</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={togglePlayPause}
+                    title="Play / Pause (Space)"
+                    className="px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white transition-colors cursor-pointer flex items-center gap-1.5 text-xs"
+                  >
+                    {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                    <span>{isPlaying ? 'Pause' : 'Play'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => seekRelative(-5)}
+                    title="Rewind 5s (← / J)"
+                    className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono text-xs"
+                  >
+                    <RotateCcw size={13} />
+                    <span>-5s</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => seekRelative(5)}
+                    title="Forward 5s (→ / L)"
+                    className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono text-xs"
+                  >
+                    <RotateCw size={13} />
+                    <span>+5s</span>
+                  </button>
+                </>
+              )}
+
+              {/* Editable or clickable timestamp indicator */}
+              {isEditingTime ? (
+                <form onSubmit={handleTimeInputSubmit} className="flex items-center gap-1 ml-1">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={timeInputStr}
+                    onChange={(e) => setTimeInputStr(e.target.value)}
+                    onBlur={() => handleTimeInputSubmit()}
+                    placeholder="1:25"
+                    className="w-16 px-1.5 py-0.5 rounded bg-neutral-800 border border-indigo-500 font-mono text-xs text-white outline-none"
+                  />
+                  <button type="submit" className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold px-1 cursor-pointer">Set</button>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTimeInputStr(formatTime(currentTimestamp));
+                    setIsEditingTime(true);
+                  }}
+                  title="Click to edit timestamp manually"
+                  className="group flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-neutral-800 text-neutral-400 hover:text-indigo-300 font-mono text-xs ml-1 font-medium cursor-pointer transition-colors"
+                >
+                  <span>{formatTime(currentTimestamp)}</span>
+                  <Edit3 size={11} className="opacity-0 group-hover:opacity-75" />
+                </button>
+              )}
             </div>
-            <div className="hidden sm:flex items-center gap-3 text-neutral-500 text-[11px]">
-              <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">Space</kbd> Play/Pause
-              </span>
-              <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">←</kbd>
-                <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">→</kbd> Scrub 5s
-              </span>
+            <div className="hidden md:flex items-center gap-3 text-neutral-500 text-[11px]">
+              {isDrive ? (
+                <span className="flex items-center gap-1 text-neutral-400">
+                  <Cloud size={13} className="text-blue-400" />
+                  Google Drive Player • Use native controls or tracker
+                </span>
+              ) : (
+                <>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">Space</kbd> Play/Pause
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">←</kbd>
+                    <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">→</kbd> Scrub 5s
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="w-96 bg-neutral-900 border-l border-neutral-800 flex flex-col shrink-0">
-          <div className="p-4 border-b border-neutral-800 bg-neutral-950">
-            <h2 className="font-medium flex items-center gap-2">
-              <MessageSquare size={16} />
+        <div className="w-full md:w-96 bg-neutral-900 md:border-l border-neutral-800 flex flex-col flex-1 md:flex-initial min-h-0 overflow-hidden">
+          <div className="px-4 py-2.5 sm:py-3 border-b border-neutral-800 bg-neutral-950 flex items-center justify-between shrink-0">
+            <h2 className="font-medium flex items-center gap-2 text-xs sm:text-sm">
+              <MessageSquare size={15} />
               Review Notes
             </h2>
+            <span className="text-xs font-mono text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded">
+              {activeComments.length}
+            </span>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
             <div>
-              <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3 px-1">Active Notes ({activeComments.length})</h3>
+              <h3 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-2.5 px-1">
+                Active Notes ({activeComments.length})
+              </h3>
               <div className="space-y-2">
                 <AnimatePresence>
                   {activeComments.length === 0 && (
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-neutral-500 italic px-1">No active notes.</motion.p>
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs sm:text-sm text-neutral-500 italic px-1">No active notes.</motion.p>
                   )}
                   {activeComments.map(comment => (
                     <motion.div
@@ -322,9 +490,9 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                       exit={{ opacity: 0, scale: 0.95 }}
                       key={comment.id}
                       onClick={() => jumpToTime(comment.timestamp_seconds)}
-                      className="group bg-neutral-800/50 hover:bg-neutral-800 p-3 rounded-lg border border-neutral-700/50 cursor-pointer transition-colors"
+                      className="group bg-neutral-800/50 hover:bg-neutral-800 p-3 rounded-lg border border-neutral-700/50 cursor-pointer transition-colors active:bg-neutral-800"
                     >
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2">
                           <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-xs font-mono font-medium">
                             {formatTime(comment.timestamp_seconds)}
@@ -334,14 +502,14 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                         {isOwner && (
                           <button
                             onClick={(e) => { e.stopPropagation(); resolveComment(comment.id); }}
-                            className="text-neutral-500 hover:text-green-400 opacity-0 group-hover:opacity-100 transition-all"
+                            className="p-1 -m-1 text-neutral-500 hover:text-green-400 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
                             title="Resolve Note"
                           >
                             <CheckCircle2 size={16} />
                           </button>
                         )}
                       </div>
-                      <p className="text-sm text-neutral-200">{comment.content}</p>
+                      <p className="text-xs sm:text-sm text-neutral-200">{comment.content}</p>
                     </motion.div>
                   ))}
                 </AnimatePresence>
@@ -350,7 +518,7 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
 
             {resolvedComments.length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-3 px-1 flex items-center gap-2">
+                <h3 className="text-[11px] font-semibold text-neutral-600 uppercase tracking-wider mb-2.5 px-1 flex items-center gap-1.5">
                   <CheckCircle2 size={12} />
                   Resolved ({resolvedComments.length})
                 </h3>
@@ -363,7 +531,7 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                         animate={{ opacity: 1, height: 'auto' }}
                         key={comment.id}
                         onClick={() => jumpToTime(comment.timestamp_seconds)}
-                        className="bg-neutral-900 p-3 rounded-lg border border-neutral-800 cursor-pointer opacity-50 hover:opacity-75 transition-opacity"
+                        className="bg-neutral-900 p-3 rounded-lg border border-neutral-800 cursor-pointer opacity-50 hover:opacity-75 transition-opacity active:opacity-90"
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <span className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 text-xs font-mono font-medium">
@@ -371,7 +539,7 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                           </span>
                           <span className="text-xs font-medium text-neutral-500 line-through">{comment.author_name}</span>
                         </div>
-                        <p className="text-sm text-neutral-400 line-through">{comment.content}</p>
+                        <p className="text-xs sm:text-sm text-neutral-400 line-through">{comment.content}</p>
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -380,12 +548,26 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
             )}
           </div>
 
-          <div className="p-4 border-t border-neutral-800 bg-neutral-950">
+          <div className="p-3 sm:p-4 border-t border-neutral-800 bg-neutral-950 shrink-0">
             <form onSubmit={submitComment} className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-medium text-neutral-500">Leaving note at:</span>
-                <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 text-xs font-mono font-medium">
-                  {formatTime(currentTimestamp)}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-medium text-neutral-500">At:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTimeInputStr(formatTime(currentTimestamp));
+                      setIsEditingTime(true);
+                    }}
+                    title="Click to edit timestamp"
+                    className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 text-xs font-mono font-medium hover:bg-indigo-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>{formatTime(currentTimestamp)}</span>
+                    <Edit3 size={10} className="opacity-70" />
+                  </button>
+                </div>
+                <span className="text-[11px] text-neutral-500">
+                  As: <strong className="text-neutral-300 font-medium">{user.name}</strong>
                 </span>
               </div>
               <textarea
@@ -400,18 +582,22 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                     }
                   }
                 }}
-                placeholder="Type a note... (pauses video, Enter to post)"
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-sm text-white placeholder:text-neutral-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
-                rows={3}
+                placeholder={isDrive ? "Type a note at this timestamp... (Enter to post)" : "Type a note... (pauses video, Enter to post)"}
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-2.5 sm:p-3 text-base sm:text-sm text-white placeholder:text-neutral-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
+                rows={2}
               />
-              <button
-                type="submit"
-                disabled={!newComment.trim()}
-                className="self-end bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                Post Note
-                <ChevronRight size={16} />
-              </button>
+              <div className="flex items-center justify-between pt-0.5">
+                <span className="text-[11px] text-neutral-500 hidden sm:inline">Press <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">Enter</kbd> to post</span>
+                <span className="text-[11px] text-neutral-500 sm:hidden">Tap Post Note</span>
+                <button
+                  type="submit"
+                  disabled={!newComment.trim()}
+                  className="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer ml-auto"
+                >
+                  Post Note
+                  <ChevronRight size={14} />
+                </button>
+              </div>
             </form>
           </div>
         </div>

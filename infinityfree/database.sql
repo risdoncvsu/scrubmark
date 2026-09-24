@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 CREATE TABLE IF NOT EXISTS `videos` (
   `id` VARCHAR(64) NOT NULL,
-  `youtube_video_id` VARCHAR(32) NOT NULL,
+  `youtube_video_id` VARCHAR(255) NOT NULL,
+  `source_type` VARCHAR(32) DEFAULT 'youtube',
   `project_name` VARCHAR(255) NOT NULL,
   `user_id` VARCHAR(64) NOT NULL,
   `owner_name` VARCHAR(191) NOT NULL,

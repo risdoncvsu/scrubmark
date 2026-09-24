@@ -86,39 +86,39 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-neutral-950 text-neutral-100 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Subtle ambient gradient backdrop */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-indigo-600/10 blur-[120px] pointer-events-none rounded-full" />
       <div className="absolute bottom-0 right-10 w-[500px] h-[250px] bg-purple-600/10 blur-[100px] pointer-events-none rounded-full" />
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4">
+      <div className="w-full sm:max-w-md mx-auto relative z-10">
         {/* Brand Header */}
-        <div className="flex items-center justify-center gap-3 mb-4">
+        <div className="flex items-center justify-center gap-2.5 sm:gap-3 mb-3 sm:mb-4">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
             <Video size={22} />
           </div>
-          <span className="text-2xl font-black tracking-tight text-white">ScrubMark</span>
+          <span className="text-xl sm:text-2xl font-black tracking-tight text-white">ScrubMark</span>
         </div>
-        <h2 className="text-center text-xl sm:text-2xl font-bold tracking-tight text-neutral-200">
+        <h2 className="text-center text-lg sm:text-2xl font-bold tracking-tight text-neutral-200">
           {mode === 'reviewer' 
             ? 'Join Video Review' 
             : mode === 'login' 
               ? 'Sign in to your workspace' 
               : 'Create your ScrubMark account'}
         </h2>
-        <p className="mt-2 text-center text-sm text-neutral-400">
+        <p className="mt-1.5 sm:mt-2 text-center text-xs sm:text-sm text-neutral-400">
           {mode === 'reviewer'
             ? "You've been invited to review this video project. Enter your name to leave timestamped feedback."
             : "Precise, timestamp-synchronized video review and feedback."}
         </p>
 
         {/* Tab switchers */}
-        <div className="mt-6 flex bg-neutral-900/80 p-1 rounded-xl border border-neutral-800">
+        <div className="mt-5 sm:mt-6 flex bg-neutral-900/80 p-1 rounded-xl border border-neutral-800">
           {inviteVideoId && (
             <button
               type="button"
               onClick={() => { setMode('reviewer'); setError(null); }}
-              className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+              className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer ${
                 mode === 'reviewer'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-neutral-400 hover:text-neutral-200'
@@ -130,7 +130,7 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
           <button
             type="button"
             onClick={() => { setMode('login'); setError(null); }}
-            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer ${
               mode === 'login'
                 ? 'bg-neutral-800 text-white shadow-sm'
                 : 'text-neutral-400 hover:text-neutral-200'
@@ -141,7 +141,7 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
           <button
             type="button"
             onClick={() => { setMode('signup'); setError(null); }}
-            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer ${
               mode === 'signup'
                 ? 'bg-neutral-800 text-white shadow-sm'
                 : 'text-neutral-400 hover:text-neutral-200'
@@ -152,10 +152,10 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
         </div>
       </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4">
-        <div className="bg-neutral-900/90 py-8 px-6 shadow-2xl rounded-2xl border border-neutral-800 sm:px-8 backdrop-blur-sm">
+      <div className="mt-5 sm:mt-6 w-full sm:max-w-md mx-auto relative z-10">
+        <div className="bg-neutral-900/90 py-6 sm:py-8 px-5 sm:px-8 shadow-2xl rounded-2xl border border-neutral-800 backdrop-blur-sm">
           {error && (
-            <div className="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-2 text-red-400 text-sm">
+            <div className="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-2 text-red-400 text-xs sm:text-sm">
               <AlertCircle size={16} className="mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
@@ -178,10 +178,10 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Sarah (Client)"
-                    className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                    className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-base sm:text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
                   />
                 </div>
-                <p className="mt-2 text-xs text-neutral-500">
+                <p className="mt-1.5 text-xs text-neutral-500">
                   No password needed. Your notes and timestamp comments will be labeled with this name.
                 </p>
               </div>
@@ -202,7 +202,7 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Alex Rivera"
-                    className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                    className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-base sm:text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
                   />
                 </div>
               </div>
@@ -224,7 +224,7 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@company.com"
-                      className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                      className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-base sm:text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
                     />
                   </div>
                 </div>
@@ -243,7 +243,7 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
-                      className="w-full pl-9 pr-10 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                      className="w-full pl-9 pr-10 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-base sm:text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
                     />
                     <button
                       type="button"
@@ -272,7 +272,7 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repeat password"
-                    className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                    className="w-full pl-9 pr-3 py-2.5 bg-neutral-950/70 border border-neutral-700/70 rounded-lg text-white placeholder-neutral-500 text-base sm:text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
                   />
                 </div>
               </div>
@@ -281,7 +281,7 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors shadow-md shadow-indigo-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors shadow-md shadow-indigo-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
