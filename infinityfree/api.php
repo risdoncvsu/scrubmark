@@ -366,6 +366,46 @@ switch ($action) {
         jsonResponse(['success' => true]);
         break;
 
+    // -------------------------------------------------------------
+    // PROXY THUMBNAIL: FOR CANVAS FRAME ANNOTATIONS
+    // -------------------------------------------------------------
+    case 'proxy_thumbnail':
+        $id = $_GET['id'] ?? '';
+        $type = $_GET['type'] ?? 'youtube';
+        if (empty($id)) {
+            http_response_code(400);
+            exit('Missing id parameter');
+        }
+
+        $targetUrl = ($type === 'google_drive')
+            ? "https://drive.google.com/thumbnail?id={$id}&sz=w1280"
+            : "https://img.youtube.com/vi/{$id}/hqdefault.jpg";
+
+        $ctx = stream_context_create([
+            'http' => [
+                'timeout' => 5,
+                'header' => "User-Agent: Mozilla/5.0\r\n"
+            ]
+        ]);
+
+        $imageData = @file_get_contents($targetUrl, false, $ctx);
+        if ($imageData === false && $type !== 'google_drive') {
+            $fallbackUrl = "https://img.youtube.com/vi/{$id}/mqdefault.jpg";
+            $imageData = @file_get_contents($fallbackUrl, false, $ctx);
+        }
+
+        if ($imageData !== false) {
+            header('Content-Type: image/jpeg');
+            header('Cache-Control: public, max-age=86400');
+            header('Access-Control-Allow-Origin: *');
+            echo $imageData;
+            exit;
+        } else {
+            http_response_code(502);
+            exit('Failed to fetch thumbnail');
+        }
+        break;
+
     default:
         jsonResponse(['error' => 'Unknown endpoint action'], 404);
         break;

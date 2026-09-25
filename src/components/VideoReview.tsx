@@ -138,6 +138,9 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
         seekRelative(10);
       } else if (e.key === 'k' || e.key === 'K') {
         togglePlayPause();
+      } else if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        handleOpenAnnotationModal();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -319,6 +322,16 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
               <span>Drive Link</span>
             </a>
           )}
+          <button
+            type="button"
+            onClick={handleOpenAnnotationModal}
+            title="Freeze frame and draw visual annotation (A)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-lg bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-xs font-semibold tracking-wide transition-all shadow-sm shadow-rose-600/30 cursor-pointer"
+          >
+            <Camera size={14} />
+            <span className="hidden xs:inline">Annotate Frame</span>
+            <span className="xs:hidden">Annotate</span>
+          </button>
           <button
             onClick={() => setIsShareModalOpen(true)}
             className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold tracking-wide transition-all shadow-sm shadow-indigo-600/30 cursor-pointer"

@@ -194,6 +194,11 @@
           <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
           <span>Drive Link</span>
         </a>
+        <button onclick="openAnnotationModal()" title="Freeze frame & draw visual annotation (A)" class="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-lg bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-xs font-semibold tracking-wide transition-all shadow-sm shadow-rose-600/30 cursor-pointer">
+          <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+          <span class="hidden xs:inline">Annotate Frame</span>
+          <span class="xs:hidden">Annotate</span>
+        </button>
         <button onclick="openShareModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold tracking-wide transition-all shadow-sm shadow-indigo-600/30 cursor-pointer">
           <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
           <span class="hidden xs:inline">Share</span>
@@ -229,6 +234,12 @@
               <span>+5s</span>
             </button>
             <span class="text-neutral-400 font-mono text-xs ml-1.5 sm:ml-2 font-medium" id="quickLiveTime">0:00</span>
+            <div class="h-4 w-px bg-neutral-800 mx-0.5 sm:mx-1"></div>
+            <!-- Annotate Frame Action Button -->
+            <button type="button" onclick="openAnnotationModal()" title="Freeze frame and draw visual annotation (A)" class="px-2.5 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 hover:border-rose-500/60 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold shadow-xs">
+              <i data-lucide="camera" class="w-3.5 h-3.5 text-rose-400"></i>
+              <span>Annotate Frame</span>
+            </button>
           </div>
           <div class="hidden md:flex items-center gap-3 text-neutral-500 text-[11px]">
             <span class="flex items-center gap-1">
@@ -237,6 +248,9 @@
             <span class="flex items-center gap-1">
               <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">←</kbd>
               <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">→</kbd> Scrub 5s
+            </span>
+            <span class="flex items-center gap-1">
+              <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">A</kbd> Annotate
             </span>
           </div>
         </div>
@@ -279,6 +293,10 @@
                   <span id="liveTimestampBadgeText">0:00</span>
                   <i data-lucide="edit-3" class="w-2.5 h-2.5 opacity-70"></i>
                 </button>
+                <button type="button" onclick="openAnnotationModal()" title="Freeze frame and draw visual feedback" class="px-2 py-0.5 rounded bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 border border-rose-500/30 text-xs flex items-center gap-1 font-medium transition-colors cursor-pointer">
+                  <i data-lucide="camera" class="w-3 h-3 text-rose-400"></i>
+                  <span>Draw on Frame</span>
+                </button>
               </div>
               <div class="flex items-center gap-1.5 text-xs">
                 <span class="text-neutral-500 text-[11px]">As:</span>
@@ -291,11 +309,36 @@
                 />
               </div>
             </div>
+
+            <!-- Attached Annotation Preview -->
+            <div id="attachedDrawingPreviewBox" class="hidden flex items-center justify-between p-2 rounded-xl bg-neutral-900 border border-rose-500/40">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div onclick="if (attachedDrawingData) openLightbox(attachedDrawingData)" class="w-14 h-9 rounded-md bg-black border border-neutral-700 overflow-hidden shrink-0 cursor-pointer relative group" title="Click to preview annotation">
+                  <img id="attachedDrawingThumbImg" src="" alt="Annotated frame" class="w-full h-full object-cover">
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-semibold text-rose-400 flex items-center gap-1">
+                      <i data-lucide="camera" class="w-3 h-3"></i>
+                      Frame Attached
+                    </span>
+                    <span id="attachedDrawingTimestamp" class="px-1.5 py-0.2 rounded bg-neutral-800 text-[10px] font-mono text-neutral-300"></span>
+                  </div>
+                  <p class="text-[11px] text-neutral-400 truncate">Visual drawing attached to note</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="openAnnotationModal()" class="text-[11px] text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded hover:bg-neutral-800 transition-colors cursor-pointer">Edit</button>
+                <button type="button" onclick="removeAttachedDrawing()" class="p-1 text-neutral-400 hover:text-rose-400 rounded hover:bg-neutral-800 transition-colors cursor-pointer" title="Remove attached frame">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
             <textarea
               id="commentTextInput"
               onfocus="handleCommentFocus()"
               onkeydown="handleCommentKeyDown(event)"
-              required
               placeholder="Type a note... (pauses video, Enter to post)"
               rows="2"
               class="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-2.5 sm:p-3 text-base sm:text-sm text-white placeholder-neutral-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
@@ -370,6 +413,155 @@
     </div>
   </div>
 
+  <!-- ============================================================ -->
+  <!-- 4. SCREENSHOT & FRAME ANNOTATION MODAL -->
+  <!-- ============================================================ -->
+  <div id="annotationModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md">
+    <div class="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-5xl h-[92vh] max-h-[850px] flex flex-col shadow-2xl overflow-hidden relative">
+      
+      <!-- Modal Header Toolbar -->
+      <div class="h-14 bg-neutral-950 border-b border-neutral-800 px-3 sm:px-4 flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="camera" class="w-4 h-4 text-rose-400"></i>
+            <span class="text-xs sm:text-sm font-bold text-white whitespace-nowrap">Annotate Frame</span>
+          </div>
+          <span id="annotationTimecodeBadge" class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-xs font-mono font-semibold border border-rose-500/30 shrink-0">
+            0:00
+          </span>
+        </div>
+
+        <!-- Tool Selection Buttons -->
+        <div class="flex items-center gap-1 bg-neutral-900 p-1 rounded-xl border border-neutral-800 shrink-0">
+          <button type="button" id="toolBtn-pen" onclick="setAnnotationTool('pen')" title="Freehand Pen" class="p-1.5 rounded-lg bg-indigo-600 text-white text-xs transition-colors cursor-pointer">
+            <i data-lucide="pen-tool" class="w-4 h-4"></i>
+          </button>
+          <button type="button" id="toolBtn-arrow" onclick="setAnnotationTool('arrow')" title="Arrow Pointer" class="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 text-xs transition-colors cursor-pointer">
+            <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+          </button>
+          <button type="button" id="toolBtn-rect" onclick="setAnnotationTool('rect')" title="Rectangle" class="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 text-xs transition-colors cursor-pointer">
+            <i data-lucide="square" class="w-4 h-4"></i>
+          </button>
+          <button type="button" id="toolBtn-circle" onclick="setAnnotationTool('circle')" title="Circle" class="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 text-xs transition-colors cursor-pointer">
+            <i data-lucide="circle" class="w-4 h-4"></i>
+          </button>
+          <button type="button" id="toolBtn-text" onclick="setAnnotationTool('text')" title="Add Text Label" class="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 text-xs transition-colors cursor-pointer">
+            <i data-lucide="type" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Color & Width Controls -->
+        <div class="hidden sm:flex items-center gap-2 shrink-0">
+          <!-- Colors -->
+          <div class="flex items-center gap-1 bg-neutral-900 p-1 rounded-xl border border-neutral-800">
+            <button type="button" onclick="setAnnotationColor('#EF4444')" class="w-5 h-5 rounded-full bg-red-500 cursor-pointer ring-2 ring-white ring-offset-1 ring-offset-neutral-900" id="colorBtn-EF4444" title="Red"></button>
+            <button type="button" onclick="setAnnotationColor('#F59E0B')" class="w-5 h-5 rounded-full bg-amber-500 cursor-pointer" id="colorBtn-F59E0B" title="Amber"></button>
+            <button type="button" onclick="setAnnotationColor('#10B981')" class="w-5 h-5 rounded-full bg-emerald-500 cursor-pointer" id="colorBtn-10B981" title="Green"></button>
+            <button type="button" onclick="setAnnotationColor('#06B6D4')" class="w-5 h-5 rounded-full bg-cyan-500 cursor-pointer" id="colorBtn-06B6D4" title="Cyan"></button>
+            <button type="button" onclick="setAnnotationColor('#FFFFFF')" class="w-5 h-5 rounded-full bg-white cursor-pointer" id="colorBtn-FFFFFF" title="White"></button>
+          </div>
+          <!-- Stroke Width -->
+          <div class="flex items-center gap-1 bg-neutral-900 p-1 rounded-xl border border-neutral-800 text-xs font-mono">
+            <button type="button" onclick="setAnnotationWidth(3)" id="widthBtn-3" class="px-2 py-0.5 rounded text-neutral-400 hover:text-white cursor-pointer">S</button>
+            <button type="button" onclick="setAnnotationWidth(6)" id="widthBtn-6" class="px-2 py-0.5 rounded bg-neutral-700 text-white font-bold cursor-pointer">M</button>
+            <button type="button" onclick="setAnnotationWidth(11)" id="widthBtn-11" class="px-2 py-0.5 rounded text-neutral-400 hover:text-white cursor-pointer">L</button>
+          </div>
+        </div>
+
+        <!-- History & Close -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" onclick="undoAnnotation()" title="Undo last stroke" class="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+          <button type="button" onclick="clearAnnotation()" title="Clear drawings" class="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-rose-400 transition-colors cursor-pointer">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+          <button type="button" onclick="closeAnnotationModal()" class="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Color & Width Bar -->
+      <div class="sm:hidden bg-neutral-950/90 border-b border-neutral-800 px-3 py-1.5 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="setAnnotationColor('#EF4444')" class="w-5 h-5 rounded-full bg-red-500 cursor-pointer" id="mColorBtn-EF4444"></button>
+          <button type="button" onclick="setAnnotationColor('#F59E0B')" class="w-5 h-5 rounded-full bg-amber-500 cursor-pointer" id="mColorBtn-F59E0B"></button>
+          <button type="button" onclick="setAnnotationColor('#10B981')" class="w-5 h-5 rounded-full bg-emerald-500 cursor-pointer" id="mColorBtn-10B981"></button>
+          <button type="button" onclick="setAnnotationColor('#06B6D4')" class="w-5 h-5 rounded-full bg-cyan-500 cursor-pointer" id="mColorBtn-06B6D4"></button>
+          <button type="button" onclick="setAnnotationColor('#FFFFFF')" class="w-5 h-5 rounded-full bg-white cursor-pointer" id="mColorBtn-FFFFFF"></button>
+        </div>
+        <div class="flex items-center gap-1 font-mono">
+          <button type="button" onclick="setAnnotationWidth(3)" class="px-2 py-0.5 rounded text-neutral-400">S</button>
+          <button type="button" onclick="setAnnotationWidth(6)" class="px-2 py-0.5 rounded bg-neutral-700 text-white">M</button>
+          <button type="button" onclick="setAnnotationWidth(11)" class="px-2 py-0.5 rounded text-neutral-400">L</button>
+        </div>
+      </div>
+
+      <!-- Text Tool Input Prompt Overlay (shown when text tool is selected) -->
+      <div id="annotationTextInputBar" class="hidden bg-neutral-950 border-b border-neutral-800 px-3 py-2 flex items-center gap-2">
+        <span class="text-xs text-neutral-400 whitespace-nowrap">Text Label:</span>
+        <input type="text" id="annotationCustomText" value="Check this frame" class="flex-1 bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1 text-xs text-white outline-none focus:border-indigo-500">
+        <span class="text-[11px] text-neutral-500 hidden sm:inline">Click anywhere on canvas to stamp text</span>
+      </div>
+
+      <!-- Canvas Area -->
+      <div class="flex-1 bg-neutral-950 flex items-center justify-center p-2 sm:p-4 overflow-hidden relative select-none">
+        <div id="canvasLoadingOverlay" class="absolute inset-0 bg-neutral-950/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10 text-xs text-neutral-400">
+          <div class="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+          <span>Freezing and loading video frame...</span>
+        </div>
+        <canvas id="annotationCanvas" width="1280" height="720" class="max-w-full max-h-full aspect-video object-contain rounded-lg shadow-2xl border border-neutral-800 cursor-crosshair bg-neutral-900"></canvas>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="h-14 bg-neutral-950 border-t border-neutral-800 px-4 flex items-center justify-between shrink-0">
+        <div class="text-xs text-neutral-400 hidden sm:flex items-center gap-2">
+          <span>Click & drag to draw. Use Arrow, Shapes, or Text to highlight details.</span>
+        </div>
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" onclick="downloadAnnotationCanvas()" class="hidden xs:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium cursor-pointer transition-colors" title="Download annotated image">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Download</span>
+          </button>
+          <button type="button" onclick="closeAnnotationModal()" class="px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium cursor-pointer transition-colors">
+            Cancel
+          </button>
+          <button type="button" onclick="saveAnnotationToNote()" class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold tracking-wide transition-all shadow-md shadow-rose-600/30 cursor-pointer">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Save & Attach to Note</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 5. HIGH-RESOLUTION FRAME LIGHTBOX -->
+  <!-- ============================================================ -->
+  <div id="lightboxModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md">
+    <div class="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-5xl w-full flex flex-col shadow-2xl overflow-hidden relative max-h-[92vh]">
+      <div class="h-12 bg-neutral-950 border-b border-neutral-800 px-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <i data-lucide="camera" class="w-4 h-4 text-rose-400"></i>
+          <span class="text-sm font-semibold text-white">Annotated Frame Inspection</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <a id="lightboxDownloadLink" href="#" download="scrubmark_frame.png" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs font-medium transition-colors cursor-pointer">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Download</span>
+          </a>
+          <button onclick="closeLightbox()" class="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+      <div class="p-3 sm:p-5 flex-1 flex items-center justify-center bg-black/80 overflow-auto min-h-0">
+        <img id="lightboxImage" src="" alt="High-resolution annotated frame" class="max-w-full max-h-[76vh] object-contain rounded-lg shadow-2xl border border-neutral-800">
+      </div>
+    </div>
+  </div>
+
   <!-- YouTube IFrame API Script -->
   <script src="https://www.youtube.com/iframe_api"></script>
 
@@ -385,6 +577,15 @@
     let pendingInviteVideoId = null;
     let isDriveVideo = false;
     let isDriveTimerRunning = false;
+    let attachedDrawingData = null;
+    let currentTool = 'pen';
+    let currentColor = '#EF4444';
+    let currentStrokeWidth = 6;
+    let canvasHistory = [];
+    let isCanvasDrawing = false;
+    let canvasStartPos = { x: 0, y: 0 };
+    let canvasSnapshot = null;
+    let annotationFrozenTimestamp = 0;
 
     // Helper: format seconds to MM:SS or HH:MM:SS
     function formatTime(seconds) {
@@ -1041,8 +1242,20 @@
             </div>
             <p class="text-xs sm:text-sm text-neutral-200">${note.content}</p>
             ${note.drawing_data ? `
-              <div class="mt-2 rounded-lg overflow-hidden border border-neutral-700/80 bg-black max-w-full">
-                <img src="${note.drawing_data}" alt="Annotated frame" class="w-full aspect-video object-cover" />
+              <div onclick="event.stopPropagation(); openLightbox('${note.drawing_data}')" class="mt-2 rounded-lg overflow-hidden border border-neutral-700/80 bg-black max-w-full cursor-zoom-in relative group/thumb hover:border-rose-500/50 transition-colors shadow-sm" title="Click to inspect frame annotation in high resolution">
+                <div class="aspect-video w-full relative">
+                  <img src="${note.drawing_data}" alt="Annotated frame" class="w-full h-full object-cover group-hover/thumb:scale-102 transition-transform duration-200" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-between p-1.5">
+                    <span class="text-[10px] font-mono text-rose-300 font-semibold flex items-center gap-1 bg-black/70 px-1.5 py-0.5 rounded backdrop-blur-xs border border-rose-500/30">
+                      <i data-lucide="camera" class="w-2.5 h-2.5"></i>
+                      ${formatTime(note.timestamp_seconds)}
+                    </span>
+                    <span class="text-[10px] text-white font-medium flex items-center gap-1 bg-neutral-900/80 px-1.5 py-0.5 rounded backdrop-blur-xs border border-neutral-700">
+                      <i data-lucide="maximize-2" class="w-2.5 h-2.5"></i>
+                      Inspect
+                    </span>
+                  </div>
+                </div>
               </div>
             ` : ''}
           `;
@@ -1063,7 +1276,7 @@
             </div>
             <p class="text-xs sm:text-sm text-neutral-400 line-through">${note.content}</p>
             ${note.drawing_data ? `
-              <div class="mt-2 rounded-lg overflow-hidden border border-neutral-800 bg-black max-w-full opacity-60">
+              <div onclick="event.stopPropagation(); openLightbox('${note.drawing_data}')" class="mt-2 rounded-lg overflow-hidden border border-neutral-800 bg-black max-w-full opacity-60 hover:opacity-100 transition-opacity cursor-zoom-in" title="Click to inspect frame annotation in high resolution">
                 <img src="${note.drawing_data}" alt="Annotated frame" class="w-full aspect-video object-cover" />
               </div>
             ` : ''}
@@ -1109,9 +1322,9 @@
         errorEl.classList.add('hidden');
       }
 
-      if (!text) {
+      if (!text && !attachedDrawingData) {
         if (errorEl) {
-          errorEl.innerText = 'Please enter a note before posting.';
+          errorEl.innerText = 'Please enter a note or annotate a frame before posting.';
           errorEl.classList.remove('hidden');
         }
         return;
@@ -1154,8 +1367,9 @@
           body: JSON.stringify({
             video_id: currentVideo.id,
             author_name: userName,
-            content: text,
-            timestamp_seconds: currentLiveTimestamp
+            content: text || `Visual frame annotation at ${formatTime(currentLiveTimestamp)}`,
+            timestamp_seconds: currentLiveTimestamp,
+            drawing_data: attachedDrawingData || null
           })
         });
 
@@ -1165,6 +1379,7 @@
         }
 
         if (textInput) textInput.value = '';
+        removeAttachedDrawing();
         await loadComments(currentVideo.id);
       } catch (err) {
         console.error('Error posting note:', err);
@@ -1266,7 +1481,400 @@
       });
     }
 
-    // Keyboard navigation hotkeys (Space for play/pause, Left/Right for -5s/+5s, J/L for -10s/+10s)
+    // --- FRAME ANNOTATION & CANVAS LOGIC ---
+    let canvasEventsBound = false;
+
+    function openAnnotationModal() {
+      if (!currentVideo) return;
+
+      // Pause playback
+      if (isDriveVideo) {
+        isDriveTimerRunning = false;
+        updatePlayState(false);
+      } else if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+        ytPlayer.pauseVideo();
+        updatePlayState(false);
+      }
+
+      annotationFrozenTimestamp = currentLiveTimestamp;
+      const badge = document.getElementById('annotationTimecodeBadge');
+      if (badge) badge.innerText = formatTime(annotationFrozenTimestamp);
+
+      const modal = document.getElementById('annotationModal');
+      if (modal) modal.classList.remove('hidden');
+
+      setAnnotationTool('pen');
+      setAnnotationColor(currentColor);
+      setAnnotationWidth(currentStrokeWidth);
+
+      // Delay init to allow modal layout
+      setTimeout(() => {
+        initAnnotationCanvas();
+      }, 50);
+
+      lucide.createIcons();
+    }
+
+    function closeAnnotationModal() {
+      const modal = document.getElementById('annotationModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function setAnnotationTool(tool) {
+      currentTool = tool;
+      const tools = ['pen', 'arrow', 'rect', 'circle', 'text'];
+      tools.forEach(t => {
+        const btn = document.getElementById(`toolBtn-${t}`);
+        if (btn) {
+          if (t === tool) {
+            btn.className = 'p-1.5 rounded-lg bg-indigo-600 text-white text-xs transition-colors cursor-pointer';
+          } else {
+            btn.className = 'p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 text-xs transition-colors cursor-pointer';
+          }
+        }
+      });
+
+      const textBar = document.getElementById('annotationTextInputBar');
+      if (textBar) {
+        if (tool === 'text') {
+          textBar.classList.remove('hidden');
+        } else {
+          textBar.classList.add('hidden');
+        }
+      }
+    }
+
+    function setAnnotationColor(color) {
+      currentColor = color;
+      const colors = ['#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#FFFFFF'];
+      colors.forEach(c => {
+        const id = c.replace('#', '');
+        const btn = document.getElementById(`colorBtn-${id}`);
+        const mBtn = document.getElementById(`mColorBtn-${id}`);
+        [btn, mBtn].forEach(b => {
+          if (b) {
+            if (c.toLowerCase() === color.toLowerCase()) {
+              b.classList.add('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-neutral-900');
+            } else {
+              b.classList.remove('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-neutral-900');
+            }
+          }
+        });
+      });
+    }
+
+    function setAnnotationWidth(width) {
+      currentStrokeWidth = width;
+      const widths = [3, 6, 11];
+      widths.forEach(w => {
+        const btn = document.getElementById(`widthBtn-${w}`);
+        if (btn) {
+          if (w === width) {
+            btn.className = 'px-2 py-0.5 rounded bg-neutral-700 text-white font-bold cursor-pointer';
+          } else {
+            btn.className = 'px-2 py-0.5 rounded text-neutral-400 hover:text-white cursor-pointer';
+          }
+        }
+      });
+    }
+
+    function initAnnotationCanvas() {
+      const canvas = document.getElementById('annotationCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const loader = document.getElementById('canvasLoadingOverlay');
+      if (loader) loader.classList.remove('hidden');
+
+      canvas.width = 1280;
+      canvas.height = 720;
+
+      // Fill dark backdrop with subtle grid
+      ctx.fillStyle = '#111827';
+      ctx.fillRect(0, 0, 1280, 720);
+      ctx.strokeStyle = '#1F2937';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < 1280; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 720);
+        ctx.stroke();
+      }
+      for (let y = 0; y < 720; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(1280, y);
+        ctx.stroke();
+      }
+
+      const isDrive = currentVideo.source_type === 'google_drive' || (currentVideo.youtube_video_id && currentVideo.youtube_video_id.length > 20);
+      const proxyUrl = `api.php?action=proxy_thumbnail&id=${encodeURIComponent(currentVideo.youtube_video_id)}&type=${isDrive ? 'google_drive' : 'youtube'}`;
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      const finishCanvasInit = () => {
+        drawCanvasWatermark(ctx, annotationFrozenTimestamp);
+        canvasHistory = [ctx.getImageData(0, 0, 1280, 720)];
+        if (loader) loader.classList.add('hidden');
+      };
+
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, 1280, 720);
+        finishCanvasInit();
+      };
+
+      img.onerror = () => {
+        // Fallback banner
+        ctx.fillStyle = '#1E293B';
+        ctx.fillRect(0, 0, 1280, 720);
+        ctx.font = 'bold 36px sans-serif';
+        ctx.fillStyle = '#94A3B8';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Paused Frame at ${formatTime(annotationFrozenTimestamp)}`, 640, 340);
+        ctx.font = '20px sans-serif';
+        ctx.fillStyle = '#64748B';
+        ctx.fillText(currentVideo.project_name, 640, 390);
+        ctx.textAlign = 'left';
+        finishCanvasInit();
+      };
+
+      img.src = proxyUrl;
+
+      if (!canvasEventsBound) {
+        bindCanvasDrawingEvents(canvas);
+        canvasEventsBound = true;
+      }
+    }
+
+    function drawCanvasWatermark(ctx, timestamp) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(24, 24, 280, 52, 10);
+      } else {
+        ctx.rect(24, 24, 280, 52);
+      }
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#EF4444';
+      ctx.beginPath();
+      ctx.arc(46, 50, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = 'bold 20px ui-monospace, SFMono-Regular, monospace';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(`FRAME ${formatTime(timestamp)}`, 66, 57);
+      ctx.restore();
+    }
+
+    function getCanvasCoordinates(e, canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function bindCanvasDrawingEvents(canvas) {
+      const ctx = canvas.getContext('2d');
+
+      const handlePointerDown = (e) => {
+        if (e.touches && e.touches.length > 1) return;
+        const pos = getCanvasCoordinates(e, canvas);
+
+        if (currentTool === 'text') {
+          const textInput = document.getElementById('annotationCustomText');
+          const str = (textInput && textInput.value.trim()) ? textInput.value.trim() : 'Note here';
+          
+          ctx.save();
+          ctx.font = 'bold 30px sans-serif';
+          ctx.lineJoin = 'round';
+          ctx.lineWidth = 6;
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+          ctx.strokeText(str, pos.x, pos.y);
+          ctx.fillStyle = currentColor;
+          ctx.fillText(str, pos.x, pos.y);
+          ctx.restore();
+
+          canvasHistory.push(ctx.getImageData(0, 0, 1280, 720));
+          return;
+        }
+
+        isCanvasDrawing = true;
+        canvasStartPos = pos;
+        canvasSnapshot = ctx.getImageData(0, 0, 1280, 720);
+
+        if (currentTool === 'pen') {
+          ctx.beginPath();
+          ctx.moveTo(pos.x, pos.y);
+        }
+      };
+
+      const handlePointerMove = (e) => {
+        if (!isCanvasDrawing) return;
+        if (e.touches && e.touches.length > 1) return;
+        e.preventDefault();
+        const currentPos = getCanvasCoordinates(e, canvas);
+
+        if (currentTool === 'pen') {
+          ctx.strokeStyle = currentColor;
+          ctx.lineWidth = currentStrokeWidth;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.lineTo(currentPos.x, currentPos.y);
+          ctx.stroke();
+        } else if (canvasSnapshot) {
+          ctx.putImageData(canvasSnapshot, 0, 0);
+          ctx.strokeStyle = currentColor;
+          ctx.lineWidth = currentStrokeWidth;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          if (currentTool === 'rect') {
+            const w = currentPos.x - canvasStartPos.x;
+            const h = currentPos.y - canvasStartPos.y;
+            ctx.strokeRect(canvasStartPos.x, canvasStartPos.y, w, h);
+          } else if (currentTool === 'circle') {
+            const rx = Math.abs(currentPos.x - canvasStartPos.x) / 2;
+            const ry = Math.abs(currentPos.y - canvasStartPos.y) / 2;
+            const cx = Math.min(canvasStartPos.x, currentPos.x) + rx;
+            const cy = Math.min(canvasStartPos.y, currentPos.y) + ry;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (currentTool === 'arrow') {
+            // Draw arrow line
+            ctx.beginPath();
+            ctx.moveTo(canvasStartPos.x, canvasStartPos.y);
+            ctx.lineTo(currentPos.x, currentPos.y);
+            ctx.stroke();
+
+            // Draw arrowhead
+            const angle = Math.atan2(currentPos.y - canvasStartPos.y, currentPos.x - canvasStartPos.x);
+            const headLength = Math.max(16, currentStrokeWidth * 3.5);
+            ctx.fillStyle = currentColor;
+            ctx.beginPath();
+            ctx.moveTo(currentPos.x, currentPos.y);
+            ctx.lineTo(
+              currentPos.x - headLength * Math.cos(angle - Math.PI / 6),
+              currentPos.y - headLength * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+              currentPos.x - headLength * Math.cos(angle + Math.PI / 6),
+              currentPos.y - headLength * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+      };
+
+      const handlePointerUp = () => {
+        if (!isCanvasDrawing) return;
+        isCanvasDrawing = false;
+        canvasHistory.push(ctx.getImageData(0, 0, 1280, 720));
+      };
+
+      canvas.addEventListener('mousedown', handlePointerDown);
+      canvas.addEventListener('mousemove', handlePointerMove);
+      window.addEventListener('mouseup', handlePointerUp);
+
+      canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+      canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
+      window.addEventListener('touchend', handlePointerUp);
+    }
+
+    function undoAnnotation() {
+      const canvas = document.getElementById('annotationCanvas');
+      if (!canvas || canvasHistory.length <= 1) return;
+      const ctx = canvas.getContext('2d');
+      canvasHistory.pop();
+      const prev = canvasHistory[canvasHistory.length - 1];
+      ctx.putImageData(prev, 0, 0);
+    }
+
+    function clearAnnotation() {
+      const canvas = document.getElementById('annotationCanvas');
+      if (!canvas || canvasHistory.length === 0) return;
+      const ctx = canvas.getContext('2d');
+      const base = canvasHistory[0];
+      canvasHistory = [base];
+      ctx.putImageData(base, 0, 0);
+    }
+
+    function downloadAnnotationCanvas() {
+      const canvas = document.getElementById('annotationCanvas');
+      if (!canvas) return;
+      const link = document.createElement('a');
+      link.download = `scrubmark_frame_${Math.floor(annotationFrozenTimestamp)}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function saveAnnotationToNote() {
+      const canvas = document.getElementById('annotationCanvas');
+      if (!canvas) return;
+
+      const dataUrl = canvas.toDataURL('image/png');
+      attachedDrawingData = dataUrl;
+
+      // Update preview UI in sidebar
+      const thumb = document.getElementById('attachedDrawingThumbImg');
+      const stamp = document.getElementById('attachedDrawingTimestamp');
+      const box = document.getElementById('attachedDrawingPreviewBox');
+      if (thumb) thumb.src = attachedDrawingData;
+      if (stamp) stamp.innerText = formatTime(annotationFrozenTimestamp);
+      if (box) box.classList.remove('hidden');
+
+      // Sync timestamp display
+      currentLiveTimestamp = annotationFrozenTimestamp;
+      updateTimeDisplays(currentLiveTimestamp);
+
+      // Populate comment box if empty
+      const commentInput = document.getElementById('commentTextInput');
+      if (commentInput && !commentInput.value.trim()) {
+        commentInput.value = `See visual annotation at ${formatTime(annotationFrozenTimestamp)}`;
+      }
+
+      closeAnnotationModal();
+      if (commentInput) commentInput.focus();
+    }
+
+    function removeAttachedDrawing() {
+      attachedDrawingData = null;
+      const box = document.getElementById('attachedDrawingPreviewBox');
+      const thumb = document.getElementById('attachedDrawingThumbImg');
+      if (box) box.classList.add('hidden');
+      if (thumb) thumb.src = '';
+    }
+
+    function openLightbox(imgSrc) {
+      if (!imgSrc) return;
+      const modal = document.getElementById('lightboxModal');
+      const img = document.getElementById('lightboxImage');
+      const link = document.getElementById('lightboxDownloadLink');
+      if (img) img.src = imgSrc;
+      if (link) link.href = imgSrc;
+      if (modal) modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeLightbox() {
+      const modal = document.getElementById('lightboxModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // Keyboard navigation hotkeys (Space for play/pause, Left/Right for -5s/+5s, J/L for -10s/+10s, A for annotate)
     window.addEventListener('keydown', (e) => {
       // Don't intercept if user is currently typing inside an input or textarea
       const activeTag = document.activeElement ? document.activeElement.tagName.toUpperCase() : '';
@@ -1294,6 +1902,9 @@
         seekRelative(10);
       } else if (e.key === 'k' || e.key === 'K') {
         togglePlayPause();
+      } else if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        openAnnotationModal();
       }
     });
   </script>
