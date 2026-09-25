@@ -183,10 +183,33 @@ async function startServer() {
     res.json({ id: newVideo.id });
   });
 
-  // GET /api/videos - List videos
+  // GET /api/videos - List videos belonging exclusively to the authenticated user
   app.get('/api/videos', (req, res) => {
-    const sorted = [...db.videos].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    res.json(sorted);
+    if (!req.userId) {
+      return res.status(401).json({ error: 'Unauthorized: User authentication required' });
+    }
+    const userVideos = db.videos
+      .filter(v => v.user_id === req.userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    res.json(userVideos);
+  });
+
+  // DELETE /api/videos/:id - Delete a video project (owner only)
+  app.delete('/api/videos/:id', (req, res) => {
+    if (!req.userId) return res.status(401).json({ error: 'Unauthorized' });
+    const index = db.videos.findIndex(v => v.id === req.params.id);
+    if (index === -1) return res.status(404).json({ error: 'Video not found' });
+    
+    // Ensure only the owner can delete the video
+    if (db.videos[index].user_id !== req.userId) {
+      return res.status(403).json({ error: 'Only the video owner can delete this project' });
+    }
+
+    db.videos.splice(index, 1);
+    db.comments = db.comments.filter(c => c.video_id !== req.params.id);
+    saveDb();
+
+    res.json({ success: true });
   });
 
   // GET /api/videos/:id - Show a single video
@@ -282,7 +305,7 @@ async function startServer() {
     const video = db.videos.find(v => v.id === comment.video_id);
     
     // Ensure only video owner can resolve comments
-    if (video.user_id !== req.userId) {
+    if (!video || video.user_id !== req.userId) {
       return res.status(403).json({ error: 'Only the video owner can resolve comments' });
     }
 

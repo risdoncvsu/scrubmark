@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { User, Video } from '../types';
 import { detectVideoSource } from '../utils';
-import { Plus, Video as VideoIcon, Clock, ChevronRight, User as UserIcon, Share2, Check, Cloud, Youtube } from 'lucide-react';
+import { Plus, Video as VideoIcon, Clock, ChevronRight, User as UserIcon, Share2, Check, Cloud, Youtube, Trash2, AlertTriangle } from 'lucide-react';
 
 interface DashboardProps {
   user: User;
@@ -17,6 +17,8 @@ export function Dashboard({ user, onSelectVideo, onLogout }: DashboardProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const detectedSource = videoUrl.trim() ? detectVideoSource(videoUrl) : null;
 
@@ -47,11 +49,38 @@ export function Dashboard({ user, onSelectVideo, onLogout }: DashboardProps) {
         }
       });
       const data = await res.json();
-      setVideos(data);
+      if (Array.isArray(data)) {
+        setVideos(data);
+      } else {
+        setVideos([]);
+      }
     } catch (e) {
       console.error(e);
+      setVideos([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteVideo = async (e: React.MouseEvent, videoId: string) => {
+    e.stopPropagation();
+    setDeletingId(videoId);
+    try {
+      const res = await fetch(`/api/videos/${videoId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': user.id,
+          'x-user-name': user.name,
+        }
+      });
+      if (res.ok) {
+        setVideos(prev => prev.filter(v => v.id !== videoId));
+      }
+    } catch (err) {
+      console.error('Failed to delete video:', err);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
     }
   };
 
@@ -270,25 +299,70 @@ export function Dashboard({ user, onSelectVideo, onLogout }: DashboardProps) {
                   <div className="p-4 flex-1 flex flex-col">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <h3 className="font-bold text-neutral-900 text-base line-clamp-1">{video.project_name}</h3>
-                      <button
-                        type="button"
-                        onClick={(e) => handleCopyShare(e, video.id)}
-                        title="Copy Client Share Link"
-                        className="shrink-0 p-1.5 rounded-lg text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer"
-                      >
-                        {copiedId === video.id ? (
-                          <>
-                            <Check size={14} className="text-emerald-600" />
-                            <span className="text-emerald-600 font-semibold">Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Share2 size={14} />
-                            <span>Share</span>
-                          </>
-                        )}
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopyShare(e, video.id)}
+                          title="Copy Client Share Link"
+                          className="p-1.5 rounded-lg text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer"
+                        >
+                          {copiedId === video.id ? (
+                            <>
+                              <Check size={14} className="text-emerald-600" />
+                              <span className="text-emerald-600 font-semibold">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Share2 size={14} />
+                              <span>Share</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteId(confirmDeleteId === video.id ? null : video.id);
+                          }}
+                          title="Delete project"
+                          className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
+
+                    {confirmDeleteId === video.id && (
+                      <div 
+                        onClick={(e) => e.stopPropagation()} 
+                        className="mb-3 p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs animate-in fade-in"
+                      >
+                        <p className="font-medium text-rose-900 mb-2 flex items-center gap-1">
+                          <AlertTriangle size={13} className="text-rose-600 shrink-0" />
+                          Delete this project and notes?
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={deletingId === video.id}
+                            onClick={(e) => handleDeleteVideo(e, video.id)}
+                            className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded font-medium cursor-pointer transition-colors text-[11px]"
+                          >
+                            {deletingId === video.id ? 'Deleting...' : 'Yes, Delete'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteId(null);
+                            }}
+                            className="px-2 py-1 bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-300 rounded cursor-pointer text-[11px]"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center text-xs text-neutral-500 mt-auto pt-3 border-t border-neutral-100 gap-4">
                       <span className="flex items-center gap-1">
                         <UserIcon size={14} className="opacity-50" />

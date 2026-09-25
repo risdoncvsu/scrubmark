@@ -121,17 +121,53 @@ switch ($action) {
         break;
 
     // -------------------------------------------------------------
-    // VIDEOS: LIST ALL VIDEOS
+    // VIDEOS: LIST VIDEOS FOR AUTHENTICATED USER
     // -------------------------------------------------------------
     case 'videos':
+        $user = getCurrentUser();
+        if (!$user) {
+            jsonResponse(['error' => 'Unauthorized: Please log in'], 401);
+        }
+        $userId = $user['id'];
         try {
-            $stmt = $db->query("SELECT id, youtube_video_id, COALESCE(source_type, 'youtube') as source_type, project_name, user_id, owner_name, created_at FROM videos ORDER BY created_at DESC");
+            $stmt = $db->prepare("SELECT id, youtube_video_id, COALESCE(source_type, 'youtube') as source_type, project_name, user_id, owner_name, created_at FROM videos WHERE user_id = ? ORDER BY created_at DESC");
+            $stmt->execute([$userId]);
             $videos = $stmt->fetchAll();
         } catch (Exception $e) {
-            $stmt = $db->query('SELECT id, youtube_video_id, project_name, user_id, owner_name, created_at FROM videos ORDER BY created_at DESC');
+            $stmt = $db->prepare('SELECT id, youtube_video_id, project_name, user_id, owner_name, created_at FROM videos WHERE user_id = ? ORDER BY created_at DESC');
+            $stmt->execute([$userId]);
             $videos = $stmt->fetchAll();
         }
         jsonResponse($videos);
+        break;
+
+    // -------------------------------------------------------------
+    // VIDEOS: DELETE VIDEO (OWNER ONLY)
+    // -------------------------------------------------------------
+    case 'delete_video':
+        if ($method !== 'POST' && $method !== 'DELETE') jsonResponse(['error' => 'Method not allowed'], 405);
+        $user = getCurrentUser();
+        if (!$user) jsonResponse(['error' => 'Unauthorized'], 401);
+        
+        $videoId = $_GET['id'] ?? $body['id'] ?? '';
+        if (!$videoId) jsonResponse(['error' => 'Video ID is required'], 400);
+
+        // Verify ownership
+        $stmt = $db->prepare('SELECT user_id FROM videos WHERE id = ?');
+        $stmt->execute([$videoId]);
+        $video = $stmt->fetch();
+        if (!$video) jsonResponse(['error' => 'Video not found'], 404);
+        if ($video['user_id'] !== $user['id']) {
+            jsonResponse(['error' => 'Only the owner can delete this project'], 403);
+        }
+
+        // Delete comments and the video
+        $stmt = $db->prepare('DELETE FROM comments WHERE video_id = ?');
+        $stmt->execute([$videoId]);
+        $stmt = $db->prepare('DELETE FROM videos WHERE id = ?');
+        $stmt->execute([$videoId]);
+
+        jsonResponse(['success' => true]);
         break;
 
     // -------------------------------------------------------------
