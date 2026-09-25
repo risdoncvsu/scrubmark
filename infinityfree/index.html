@@ -486,6 +486,11 @@
 
         <!-- History, Upload & Close -->
         <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" onclick="captureExactFrame()" title="Snap exact paused frame from screen or browser tab" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer transition-colors shadow-sm">
+            <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Snap Exact Frame</span>
+            <span class="sm:hidden">Snap</span>
+          </button>
           <label class="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium cursor-pointer transition-colors" title="Upload custom frame screenshot">
             <i data-lucide="upload" class="w-3.5 h-3.5"></i>
             <span>Upload Frame</span>
@@ -524,6 +529,21 @@
         <span class="text-xs text-neutral-400 whitespace-nowrap">Text Label:</span>
         <input type="text" id="annotationCustomText" value="Check this frame" class="flex-1 bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1 text-xs text-white outline-none focus:border-indigo-500">
         <span class="text-[11px] text-neutral-400 hidden sm:inline">Click anywhere to place text. <strong>Double-click any text</strong> to edit!</span>
+      </div>
+
+      <!-- Thumbnail Fallback Notice Bar -->
+      <div id="annotationFallbackBanner" class="bg-amber-500/10 border-b border-amber-500/30 px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-amber-200">
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="info" class="w-4 h-4 text-amber-400 shrink-0"></i>
+          <span>Showing video cover thumbnail. External iframe (YouTube / Drive) restricts direct pixel extraction.</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="captureExactFrame()" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors shadow-xs">
+            <i data-lucide="camera" class="w-3 h-3"></i>
+            <span>Snap Exact Video Frame</span>
+          </button>
+          <span class="text-neutral-400 text-[11px] hidden md:inline">or press <strong>Ctrl+V</strong> after screenshot</span>
+        </div>
       </div>
 
       <!-- Canvas Area -->
@@ -1720,6 +1740,60 @@
         bindCanvasDrawingEvents(canvas);
         window.addEventListener('resize', updateAnnotationCanvasSize);
         canvasEventsBound = true;
+      }
+    }
+
+    async function captureExactFrame() {
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: 'browser' },
+          audio: false
+        });
+
+        const track = stream.getVideoTracks()[0];
+        const tempVideo = document.createElement('video');
+        tempVideo.srcObject = stream;
+        tempVideo.muted = true;
+        tempVideo.playsInline = true;
+        await tempVideo.play();
+        await new Promise(r => setTimeout(r, 80));
+
+        const canvas = document.getElementById('annotationCanvas');
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, 1280, 720);
+
+            const canvasRatio = 1280 / 720;
+            const vW = tempVideo.videoWidth || 1280;
+            const vH = tempVideo.videoHeight || 720;
+            const imgRatio = vW / vH;
+
+            let drawW = 1280;
+            let drawH = 720;
+            let drawX = 0;
+            let drawY = 0;
+            if (imgRatio > canvasRatio) {
+              drawH = 1280 / imgRatio;
+              drawY = (720 - drawH) / 2;
+            } else if (imgRatio < canvasRatio) {
+              drawW = 720 * imgRatio;
+              drawX = (1280 - drawW) / 2;
+            }
+            ctx.drawImage(tempVideo, drawX, drawY, drawW, drawH);
+            drawCanvasWatermark(ctx, annotationFrozenTimestamp);
+            canvasHistory = [ctx.getImageData(0, 0, 1280, 720)];
+            const banner = document.getElementById('annotationFallbackBanner');
+            if (banner) banner.classList.add('hidden');
+          }
+        }
+        tempVideo.pause();
+        tempVideo.srcObject = null;
+        track.stop();
+        stream.getTracks().forEach(t => t.stop());
+      } catch (err) {
+        console.warn('Screen capture cancelled or unavailable:', err);
       }
     }
 

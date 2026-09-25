@@ -15,7 +15,8 @@ import {
   Camera,
   Edit2,
   Upload,
-  Move
+  Move,
+  Sparkles
 } from 'lucide-react';
 import type { Video } from '../types';
 import { formatTime } from '../utils';
@@ -76,6 +77,10 @@ export function FrameAnnotationModal({
   const [quickTextPreset, setQuickTextPreset] = useState<string>('Check this frame');
   const [draggingTextId, setDraggingTextId] = useState<string | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Screen snap & fallback states
+  const [isCapturingScreen, setIsCapturingScreen] = useState(false);
+  const [isUsingThumbnailFallback, setIsUsingThumbnailFallback] = useState(false);
 
   // Strictly enforced 16:9 canvas viewport dimension to eliminate any aspect ratio distortion
   const [displayDimensions, setDisplayDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -169,12 +174,14 @@ export function FrameAnnotationModal({
       try {
         ctx.drawImage(videoElement, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         drawTimecodeStamp();
+        setIsUsingThumbnailFallback(false);
         return;
       } catch (err) {
         console.warn('Could not directly grab frame from video element, falling back to proxy:', err);
       }
     }
 
+    setIsUsingThumbnailFallback(true);
     const isDrive = video.source_type === 'google_drive' || (video.youtube_video_id && video.youtube_video_id.length > 20);
     const proxyUrl = `/api/proxy-thumbnail?id=${encodeURIComponent(video.youtube_video_id)}&type=${isDrive ? 'google_drive' : 'youtube'}`;
 
@@ -232,6 +239,97 @@ export function FrameAnnotationModal({
 
     img.src = proxyUrl;
   }, [video, timestamp, videoElement]);
+
+  // Capture the exact paused video frame directly from browser tab/screen
+  const captureExactFrame = async () => {
+    try {
+      setIsCapturingScreen(true);
+      // @ts-ignore
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          // @ts-ignore
+          preferCurrentTab: true,
+          displaySurface: 'browser'
+        },
+        audio: false
+      });
+
+      const track = stream.getVideoTracks()[0];
+      const tempVideo = document.createElement('video');
+      tempVideo.srcObject = stream;
+      tempVideo.muted = true;
+      tempVideo.playsInline = true;
+      await tempVideo.play();
+
+      // Brief frame settling delay
+      await new Promise(r => setTimeout(r, 80));
+
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#0a0a0a';
+          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+          const canvasRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
+          const vW = tempVideo.videoWidth || CANVAS_WIDTH;
+          const vH = tempVideo.videoHeight || CANVAS_HEIGHT;
+          const imgRatio = vW / vH;
+
+          let drawW = CANVAS_WIDTH;
+          let drawH = CANVAS_HEIGHT;
+          let drawX = 0;
+          let drawY = 0;
+          if (imgRatio > canvasRatio) {
+            drawH = CANVAS_WIDTH / imgRatio;
+            drawY = (CANVAS_HEIGHT - drawH) / 2;
+          } else if (imgRatio < canvasRatio) {
+            drawW = CANVAS_HEIGHT * imgRatio;
+            drawX = (CANVAS_WIDTH - drawW) / 2;
+          }
+
+          ctx.drawImage(tempVideo, drawX, drawY, drawW, drawH);
+
+          // Stamp frame timecode
+          ctx.save();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
+          ctx.beginPath();
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(24, 24, 280, 50, 10);
+          } else {
+            ctx.rect(24, 24, 280, 50);
+          }
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.fillStyle = '#10B981';
+          ctx.beginPath();
+          ctx.arc(46, 49, 7, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.font = 'bold 20px ui-monospace, SFMono-Regular, monospace';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillText(`FRAME ${formatTime(timestamp)}`, 66, 56);
+          ctx.restore();
+
+          const snapshot = ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+          setHistory(prev => [...prev, snapshot]);
+          setIsUsingThumbnailFallback(false);
+        }
+      }
+
+      tempVideo.pause();
+      tempVideo.srcObject = null;
+      track.stop();
+      stream.getTracks().forEach(t => t.stop());
+      setIsCapturingScreen(false);
+    } catch (err) {
+      console.warn('Screen capture cancelled or unavailable:', err);
+      setIsCapturingScreen(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -683,6 +781,16 @@ export function FrameAnnotationModal({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={captureExactFrame}
+              disabled={isCapturingScreen}
+              title="Capture exact paused video frame from your screen or active browser tab"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+            >
+              <Camera size={13} />
+              <span>{isCapturingScreen ? 'Snapping...' : 'Snap Exact Frame'}</span>
+            </button>
             <label
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium transition-colors cursor-pointer"
               title="Upload custom frame screenshot"
@@ -863,6 +971,30 @@ export function FrameAnnotationModal({
               <span className="text-[11px] text-neutral-400 hidden sm:inline">
                 Click anywhere to place text. <strong>Double-click any text</strong> to edit!
               </span>
+            </div>
+          )}
+
+          {/* Thumbnail Fallback Notice Bar */}
+          {isUsingThumbnailFallback && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-amber-200">
+              <div className="flex items-center gap-2">
+                <Sparkles size={15} className="text-amber-400 shrink-0" />
+                <span>
+                  Showing video cover thumbnail. External iframe (YouTube / Drive) restricts direct pixel extraction.
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={captureExactFrame}
+                  disabled={isCapturingScreen}
+                  className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm transition-colors"
+                >
+                  <Camera size={13} />
+                  <span>{isCapturingScreen ? 'Snapping...' : 'Snap Exact Video Frame'}</span>
+                </button>
+                <span className="text-neutral-400 text-[11px] hidden md:inline">or press <strong>Ctrl+V</strong> after screenshot</span>
+              </div>
             </div>
           )}
 
