@@ -218,6 +218,22 @@
         <div class="w-full aspect-video md:aspect-auto md:flex-1 relative bg-black max-h-[38vh] sm:max-h-[44vh] md:max-h-none">
           <div id="youtubePlayerContainer" class="absolute inset-0 w-full h-full"></div>
         </div>
+        <!-- Interactive Drive Timeline Scrubber -->
+        <div id="driveTimelineSyncBar" class="hidden h-8 bg-neutral-950 px-3 sm:px-4 flex items-center gap-2.5 border-t border-neutral-800 text-xs shrink-0 select-none">
+          <span id="driveTimelineLiveTime" class="text-[11px] font-mono text-indigo-400 font-bold shrink-0">0:00</span>
+          <input
+            type="range"
+            id="driveScrubberSlider"
+            min="0"
+            max="300"
+            step="1"
+            value="0"
+            oninput="handleDriveSliderInput(this.value)"
+            class="flex-1 accent-indigo-500 cursor-pointer h-1.5 bg-neutral-800 rounded-lg appearance-none"
+            title="Scrub timeline to sync timestamp"
+          />
+          <span class="text-[11px] font-mono text-neutral-400 shrink-0">Timeline Sync</span>
+        </div>
         <!-- Quick Reviewer Control Bar -->
         <div class="h-11 sm:h-12 bg-neutral-950/95 border-y md:border-b-0 md:border-t border-neutral-800 px-3 sm:px-4 flex items-center justify-between shrink-0 text-xs text-neutral-300">
           <div class="flex items-center gap-1.5 sm:gap-2">
@@ -468,8 +484,13 @@
           </div>
         </div>
 
-        <!-- History & Close -->
+        <!-- History, Upload & Close -->
         <div class="flex items-center gap-1.5 shrink-0">
+          <label class="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium cursor-pointer transition-colors" title="Upload custom frame screenshot">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+            <span>Upload Frame</span>
+            <input type="file" accept="image/*" class="hidden" onchange="handleAnnotationImageUpload(event)">
+          </label>
           <button type="button" onclick="undoAnnotation()" title="Undo last stroke" class="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           </button>
@@ -502,16 +523,20 @@
       <div id="annotationTextInputBar" class="hidden bg-neutral-950 border-b border-neutral-800 px-3 py-2 flex items-center gap-2">
         <span class="text-xs text-neutral-400 whitespace-nowrap">Text Label:</span>
         <input type="text" id="annotationCustomText" value="Check this frame" class="flex-1 bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1 text-xs text-white outline-none focus:border-indigo-500">
-        <span class="text-[11px] text-neutral-500 hidden sm:inline">Click anywhere on canvas to stamp text</span>
+        <span class="text-[11px] text-neutral-400 hidden sm:inline">Click anywhere to place text. <strong>Double-click any text</strong> to edit!</span>
       </div>
 
       <!-- Canvas Area -->
-      <div class="flex-1 bg-neutral-950 flex items-center justify-center p-2 sm:p-4 overflow-hidden relative select-none">
+      <div id="annotationCanvasContainer" class="flex-1 bg-neutral-950 flex items-center justify-center p-2 sm:p-4 overflow-hidden relative select-none min-h-0">
         <div id="canvasLoadingOverlay" class="absolute inset-0 bg-neutral-950/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10 text-xs text-neutral-400">
           <div class="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
-          <span>Freezing and loading video frame...</span>
+          <span>Freezing HD video frame...</span>
         </div>
-        <canvas id="annotationCanvas" width="1280" height="720" class="max-w-full max-h-full aspect-video object-contain rounded-lg shadow-2xl border border-neutral-800 cursor-crosshair bg-neutral-900"></canvas>
+        <div id="annotationCanvasWrapper" class="relative flex items-center justify-center shadow-2xl rounded-lg overflow-hidden border border-neutral-800 bg-neutral-900" style="aspect-ratio: 16/9; max-width: 100%; max-height: 100%;">
+          <canvas id="annotationCanvas" width="1280" height="720" class="w-full h-full block cursor-crosshair bg-neutral-900"></canvas>
+          <!-- Interactive Text Items Overlay Container -->
+          <div id="canvasTextOverlay" class="absolute inset-0 pointer-events-none"></div>
+        </div>
       </div>
 
       <!-- Modal Footer -->
@@ -1414,14 +1439,20 @@
       currentLiveTimestamp = seconds;
       updateTimeDisplays(seconds);
       if (isDriveVideo) {
+        const driveSlider = document.getElementById('driveTimelineSyncBar');
+        if (driveSlider) {
+          const inp = driveSlider.querySelector('input[type="range"]');
+          if (inp) inp.value = seconds;
+        }
         const notice = document.getElementById('driveJumpNotice');
         if (notice) {
-          notice.innerHTML = `<span class="inline-flex items-center gap-1.5"><i data-lucide="pin" class="w-3.5 h-3.5 text-indigo-400"></i> Note timestamp at <strong>${formatTime(seconds)}</strong> — scrub Drive timeline to ${formatTime(seconds)}</span>`;
+          const driveTimeUrl = `https://drive.google.com/file/d/${currentVideo.youtube_video_id}/view?t=${Math.floor(seconds)}s`;
+          notice.innerHTML = `<span class="inline-flex items-center gap-1.5 flex-wrap"><i data-lucide="pin" class="w-3.5 h-3.5 text-indigo-400"></i> Synced to <strong>${formatTime(seconds)}</strong> • <a href="${driveTimeUrl}" target="_blank" class="underline text-blue-300 hover:text-white font-sans text-[11px] flex items-center gap-0.5">Open at ${formatTime(seconds)} in Drive ↗</a></span>`;
           notice.classList.remove('hidden');
           lucide.createIcons();
           setTimeout(() => {
             if (notice) notice.classList.add('hidden');
-          }, 4500);
+          }, 6000);
         }
       } else if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
         ytPlayer.seekTo(seconds, true);
@@ -1578,35 +1609,50 @@
       });
     }
 
+    let canvasTextItems = [];
+    let editingTextItemId = null;
+    let draggingTextItemId = null;
+    let dragStartOffset = { x: 0, y: 0 };
+
+    function updateAnnotationCanvasSize() {
+      const container = document.getElementById('annotationCanvasContainer');
+      const wrapper = document.getElementById('annotationCanvasWrapper');
+      if (!container || !wrapper) return;
+      const w = container.clientWidth - 16;
+      const h = container.clientHeight - 16;
+      if (w <= 0 || h <= 0) return;
+
+      const targetRatio = 16 / 9;
+      let finalW = w;
+      let finalH = w / targetRatio;
+      if (finalH > h) {
+        finalH = h;
+        finalW = finalH * targetRatio;
+      }
+      wrapper.style.width = Math.floor(finalW) + 'px';
+      wrapper.style.height = Math.floor(finalH) + 'px';
+    }
+
     function initAnnotationCanvas() {
       const canvas = document.getElementById('annotationCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
+      updateAnnotationCanvasSize();
+
       const loader = document.getElementById('canvasLoadingOverlay');
       if (loader) loader.classList.remove('hidden');
 
       canvas.width = 1280;
       canvas.height = 720;
+      canvasTextItems = [];
+      editingTextItemId = null;
+      renderCanvasTextOverlay();
 
-      // Fill dark backdrop with subtle grid
-      ctx.fillStyle = '#111827';
+      // Fill dark backdrop
+      ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, 1280, 720);
-      ctx.strokeStyle = '#1F2937';
-      ctx.lineWidth = 1;
-      for (let x = 0; x < 1280; x += 40) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, 720);
-        ctx.stroke();
-      }
-      for (let y = 0; y < 720; y += 40) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(1280, y);
-        ctx.stroke();
-      }
 
       const isDrive = currentVideo.source_type === 'google_drive' || (currentVideo.youtube_video_id && currentVideo.youtube_video_id.length > 20);
       const proxyUrl = `api.php?action=proxy_thumbnail&id=${encodeURIComponent(currentVideo.youtube_video_id)}&type=${isDrive ? 'google_drive' : 'youtube'}`;
@@ -1621,18 +1667,46 @@
       };
 
       img.onload = () => {
-        ctx.drawImage(img, 0, 0, 1280, 720);
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, 1280, 720);
+
+        const canvasRatio = 1280 / 720;
+        const imgW = img.naturalWidth || 1280;
+        const imgH = img.naturalHeight || 720;
+        const imgRatio = imgW / imgH;
+
+        // YouTube 4:3 letterbox format check (hqdefault or sddefault have 4:3 image for 16:9 video)
+        if (Math.abs(imgRatio - (4 / 3)) < 0.08) {
+          const cropH = imgW / canvasRatio; // 480 / (16/9) = 270
+          const cropY = (imgH - cropH) / 2; // (360 - 270) / 2 = 45
+          ctx.drawImage(img, 0, cropY, imgW, cropH, 0, 0, 1280, 720);
+        } else {
+          // Aspect ratio preservation (no vertical or horizontal stretch)
+          let drawW = 1280;
+          let drawH = 720;
+          let drawX = 0;
+          let drawY = 0;
+          if (imgRatio > canvasRatio) {
+            drawH = 1280 / imgRatio;
+            drawY = (720 - drawH) / 2;
+          } else if (imgRatio < canvasRatio) {
+            drawW = 720 * imgRatio;
+            drawX = (1280 - drawW) / 2;
+          }
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        }
+
         finishCanvasInit();
       };
 
       img.onerror = () => {
         // Fallback banner
-        ctx.fillStyle = '#1E293B';
+        ctx.fillStyle = '#111827';
         ctx.fillRect(0, 0, 1280, 720);
         ctx.font = 'bold 36px sans-serif';
         ctx.fillStyle = '#94A3B8';
         ctx.textAlign = 'center';
-        ctx.fillText(`Paused Frame at ${formatTime(annotationFrozenTimestamp)}`, 640, 340);
+        ctx.fillText(`Video Frame at ${formatTime(annotationFrozenTimestamp)}`, 640, 340);
         ctx.font = '20px sans-serif';
         ctx.fillStyle = '#64748B';
         ctx.fillText(currentVideo.project_name, 640, 390);
@@ -1644,8 +1718,226 @@
 
       if (!canvasEventsBound) {
         bindCanvasDrawingEvents(canvas);
+        window.addEventListener('resize', updateAnnotationCanvasSize);
         canvasEventsBound = true;
       }
+    }
+
+    function handleAnnotationImageUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.getElementById('annotationCanvas');
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          ctx.fillStyle = '#0a0a0a';
+          ctx.fillRect(0, 0, 1280, 720);
+
+          const canvasRatio = 1280 / 720;
+          const imgRatio = (img.naturalWidth || 1280) / (img.naturalHeight || 720);
+          let drawW = 1280;
+          let drawH = 720;
+          let drawX = 0;
+          let drawY = 0;
+          if (imgRatio > canvasRatio) {
+            drawH = 1280 / imgRatio;
+            drawY = (720 - drawH) / 2;
+          } else if (imgRatio < canvasRatio) {
+            drawW = 720 * imgRatio;
+            drawX = (1280 - drawW) / 2;
+          }
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          drawCanvasWatermark(ctx, annotationFrozenTimestamp);
+          canvasHistory.push(ctx.getImageData(0, 0, 1280, 720));
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderCanvasTextOverlay() {
+      const overlay = document.getElementById('canvasTextOverlay');
+      if (!overlay) return;
+      overlay.innerHTML = '';
+
+      canvasTextItems.forEach(item => {
+        const leftPct = (item.x / 1280) * 100;
+        const topPct = (item.y / 720) * 100;
+        const isEditing = editingTextItemId === item.id;
+
+        const el = document.createElement('div');
+        el.className = 'absolute -translate-y-1/2 z-20 group pointer-events-auto';
+        el.style.left = `${leftPct}%`;
+        el.style.top = `${topPct}%`;
+
+        if (isEditing) {
+          el.innerHTML = `
+            <div class="flex items-center gap-1.5 bg-neutral-950/95 p-1 rounded-lg border-2 shadow-2xl backdrop-blur-md" style="border-color: ${item.color};">
+              <input
+                id="editTextInput-${item.id}"
+                type="text"
+                value="${item.text.replace(/"/g, '&quot;')}"
+                class="bg-transparent text-xs sm:text-sm font-bold text-white outline-none px-2 py-0.5 min-w-[160px]"
+                style="color: ${item.color};"
+              />
+              <button
+                type="button"
+                onclick="saveTextItemEdit('${item.id}')"
+                class="p-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-2 cursor-pointer transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          `;
+          overlay.appendChild(el);
+          const inp = document.getElementById(`editTextInput-${item.id}`);
+          if (inp) {
+            inp.focus();
+            inp.select();
+            inp.onkeydown = (ev) => {
+              if (ev.key === 'Enter') saveTextItemEdit(item.id);
+              if (ev.key === 'Escape') {
+                editingTextItemId = null;
+                renderCanvasTextOverlay();
+              }
+            };
+            inp.onblur = () => saveTextItemEdit(item.id);
+          }
+        } else {
+          el.ondblclick = (ev) => {
+            ev.stopPropagation();
+            startEditTextItem(item.id);
+          };
+          el.onmousedown = (ev) => handleTextItemMouseDown(ev, item.id);
+          el.innerHTML = `
+            <div
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/85 border-2 shadow-xl cursor-grab active:cursor-grabbing select-none transition-all hover:scale-102 hover:bg-black/95"
+              style="border-color: ${item.color};"
+              title="Double-click to edit text, drag to reposition"
+            >
+              <i data-lucide="move" class="w-3 h-3 text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+              <span class="text-xs sm:text-sm font-bold whitespace-nowrap" style="color: ${item.color};">
+                ${item.text}
+              </span>
+              <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity pl-1">
+                <button
+                  type="button"
+                  onclick="event.stopPropagation(); startEditTextItem('${item.id}')"
+                  class="p-0.5 text-neutral-400 hover:text-indigo-400 transition-colors cursor-pointer"
+                  title="Edit text (or double click)"
+                >
+                  <i data-lucide="edit-2" class="w-3 h-3"></i>
+                </button>
+                <button
+                  type="button"
+                  onclick="event.stopPropagation(); deleteTextItem('${item.id}')"
+                  class="p-0.5 text-neutral-400 hover:text-rose-400 transition-colors cursor-pointer"
+                  title="Delete text"
+                >
+                  <i data-lucide="x" class="w-3 h-3"></i>
+                </button>
+              </div>
+            </div>
+          `;
+          overlay.appendChild(el);
+        }
+      });
+
+      lucide.createIcons();
+    }
+
+    function startEditTextItem(id) {
+      editingTextItemId = id;
+      renderCanvasTextOverlay();
+    }
+
+    function saveTextItemEdit(id) {
+      const inp = document.getElementById(`editTextInput-${id}`);
+      if (!inp) return;
+      const val = inp.value.trim();
+      if (!val) {
+        deleteTextItem(id);
+      } else {
+        const item = canvasTextItems.find(t => t.id === id);
+        if (item) item.text = val;
+        editingTextItemId = null;
+        renderCanvasTextOverlay();
+      }
+    }
+
+    function deleteTextItem(id) {
+      canvasTextItems = canvasTextItems.filter(t => t.id !== id);
+      if (editingTextItemId === id) editingTextItemId = null;
+      renderCanvasTextOverlay();
+    }
+
+    function handleTextItemMouseDown(e, id) {
+      if (editingTextItemId === id) return;
+      e.stopPropagation();
+      const item = canvasTextItems.find(t => t.id === id);
+      if (!item) return;
+
+      const canvas = document.getElementById('annotationCanvas');
+      const rect = canvas ? canvas.getBoundingClientRect() : null;
+      const scaleX = rect ? 1280 / rect.width : 1;
+      const scaleY = rect ? 720 / rect.height : 1;
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const initX = item.x;
+      const initY = item.y;
+
+      const onMouseMove = (moveEv) => {
+        const dx = (moveEv.clientX - startX) * scaleX;
+        const dy = (moveEv.clientY - startY) * scaleY;
+        item.x = Math.max(20, Math.min(1200, initX + dx));
+        item.y = Math.max(30, Math.min(690, initY + dy));
+        renderCanvasTextOverlay();
+      };
+
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    function stampCanvasTextItems(ctx) {
+      canvasTextItems.forEach(item => {
+        ctx.save();
+        ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const textMetrics = ctx.measureText(item.text);
+        const paddingX = 14;
+        const paddingY = 8;
+        const boxWidth = textMetrics.width + paddingX * 2;
+        const boxHeight = 36 + paddingY;
+
+        // Dark pill background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(item.x, item.y - 28, boxWidth, boxHeight, 8);
+        } else {
+          ctx.rect(item.x, item.y - 28, boxWidth, boxHeight);
+        }
+        ctx.fill();
+
+        // Border outline
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Text label
+        ctx.fillStyle = item.color;
+        ctx.fillText(item.text, item.x + paddingX, item.y + 2);
+        ctx.restore();
+      });
     }
 
     function drawCanvasWatermark(ctx, timestamp) {
@@ -1694,19 +1986,17 @@
 
         if (currentTool === 'text') {
           const textInput = document.getElementById('annotationCustomText');
-          const str = (textInput && textInput.value.trim()) ? textInput.value.trim() : 'Note here';
-          
-          ctx.save();
-          ctx.font = 'bold 30px sans-serif';
-          ctx.lineJoin = 'round';
-          ctx.lineWidth = 6;
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
-          ctx.strokeText(str, pos.x, pos.y);
-          ctx.fillStyle = currentColor;
-          ctx.fillText(str, pos.x, pos.y);
-          ctx.restore();
-
-          canvasHistory.push(ctx.getImageData(0, 0, 1280, 720));
+          const str = (textInput && textInput.value.trim()) ? textInput.value.trim() : 'Click to edit text';
+          const newId = 'txt_' + Date.now();
+          canvasTextItems.push({
+            id: newId,
+            text: str,
+            x: pos.x,
+            y: pos.y,
+            color: currentColor
+          });
+          renderCanvasTextOverlay();
+          startEditTextItem(newId);
           return;
         }
 
@@ -1753,13 +2043,11 @@
             ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
             ctx.stroke();
           } else if (currentTool === 'arrow') {
-            // Draw arrow line
             ctx.beginPath();
             ctx.moveTo(canvasStartPos.x, canvasStartPos.y);
             ctx.lineTo(currentPos.x, currentPos.y);
             ctx.stroke();
 
-            // Draw arrowhead
             const angle = Math.atan2(currentPos.y - canvasStartPos.y, currentPos.x - canvasStartPos.x);
             const headLength = Math.max(16, currentStrokeWidth * 3.5);
             ctx.fillStyle = currentColor;
@@ -1795,6 +2083,11 @@
     }
 
     function undoAnnotation() {
+      if (canvasTextItems.length > 0) {
+        canvasTextItems.pop();
+        renderCanvasTextOverlay();
+        return;
+      }
       const canvas = document.getElementById('annotationCanvas');
       if (!canvas || canvasHistory.length <= 1) return;
       const ctx = canvas.getContext('2d');
@@ -1804,6 +2097,10 @@
     }
 
     function clearAnnotation() {
+      canvasTextItems = [];
+      editingTextItemId = null;
+      renderCanvasTextOverlay();
+
       const canvas = document.getElementById('annotationCanvas');
       if (!canvas || canvasHistory.length === 0) return;
       const ctx = canvas.getContext('2d');
@@ -1815,6 +2112,10 @@
     function downloadAnnotationCanvas() {
       const canvas = document.getElementById('annotationCanvas');
       if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (ctx && canvasTextItems.length > 0) {
+        stampCanvasTextItems(ctx);
+      }
       const link = document.createElement('a');
       link.download = `scrubmark_frame_${Math.floor(annotationFrozenTimestamp)}.png`;
       link.href = canvas.toDataURL('image/png');
@@ -1824,6 +2125,10 @@
     function saveAnnotationToNote() {
       const canvas = document.getElementById('annotationCanvas');
       if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (ctx && canvasTextItems.length > 0) {
+        stampCanvasTextItems(ctx);
+      }
 
       const dataUrl = canvas.toDataURL('image/png');
       attachedDrawingData = dataUrl;

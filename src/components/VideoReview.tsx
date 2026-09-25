@@ -35,8 +35,11 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   const [isEditingTime, setIsEditingTime] = useState(false);
   const [timeInputStr, setTimeInputStr] = useState('0:00');
   const [jumpNotice, setJumpNotice] = useState<string | null>(null);
+  const [drivePlayerMode, setDrivePlayerMode] = useState<'html5' | 'embed'>('html5');
+  const [videoDuration, setVideoDuration] = useState<number>(0);
 
   const playerRef = useRef<any>(null);
+  const html5VideoRef = useRef<HTMLVideoElement | null>(null);
 
   const isDrive = video ? (video.source_type === 'google_drive' || (video.youtube_video_id && video.youtube_video_id.length > 20)) : false;
 
@@ -85,6 +88,17 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   }, [isDrive, isSyncTimerRunning]);
 
   const togglePlayPause = () => {
+    if (isDrive && drivePlayerMode === 'html5' && html5VideoRef.current) {
+      if (html5VideoRef.current.paused) {
+        html5VideoRef.current.play();
+        setIsPlaying(true);
+      } else {
+        html5VideoRef.current.pause();
+        setIsPlaying(false);
+      }
+      return;
+    }
+
     if (isDrive) {
       setIsSyncTimerRunning(prev => !prev);
       return;
@@ -103,6 +117,13 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   };
 
   const seekRelative = (deltaSeconds: number) => {
+    if (isDrive && drivePlayerMode === 'html5' && html5VideoRef.current) {
+      const nextTime = Math.max(0, html5VideoRef.current.currentTime + deltaSeconds);
+      html5VideoRef.current.currentTime = nextTime;
+      setCurrentTimestamp(nextTime);
+      return;
+    }
+
     if (isDrive) {
       setCurrentTimestamp(prev => Math.max(0, prev + deltaSeconds));
       return;
@@ -145,9 +166,16 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isDrive, isSyncTimerRunning]);
+  }, [isDrive, drivePlayerMode, isSyncTimerRunning]);
 
   const handleCommentFocus = () => {
+    if (isDrive && drivePlayerMode === 'html5' && html5VideoRef.current) {
+      html5VideoRef.current.pause();
+      setIsPlaying(false);
+      setCurrentTimestamp(html5VideoRef.current.currentTime);
+      return;
+    }
+
     if (isDrive) {
       setIsSyncTimerRunning(false);
       return;
@@ -161,7 +189,11 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   };
 
   const handleOpenAnnotationModal = () => {
-    if (isDrive) {
+    if (isDrive && drivePlayerMode === 'html5' && html5VideoRef.current) {
+      html5VideoRef.current.pause();
+      setIsPlaying(false);
+      setCurrentTimestamp(html5VideoRef.current.currentTime);
+    } else if (isDrive) {
       setIsSyncTimerRunning(false);
     } else if (playerRef.current) {
       if (typeof playerRef.current.pauseVideo === 'function') {
@@ -250,6 +282,13 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
 
   const jumpToTime = (seconds: number) => {
     setCurrentTimestamp(seconds);
+    if (isDrive && drivePlayerMode === 'html5' && html5VideoRef.current) {
+      html5VideoRef.current.currentTime = seconds;
+      html5VideoRef.current.play();
+      setIsPlaying(true);
+      return;
+    }
+
     if (isDrive) {
       setJumpNotice(`📌 Note at ${formatTime(seconds)} — scrub Drive player timeline to ${formatTime(seconds)}`);
       setTimeout(() => setJumpNotice(null), 4000);
@@ -355,13 +394,82 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
         <div className="w-full md:flex-1 flex flex-col shrink-0 md:shrink relative bg-black">
           <div className="w-full aspect-video md:aspect-auto md:flex-1 relative bg-black max-h-[38vh] sm:max-h-[44vh] md:max-h-none">
             {isDrive ? (
-              <iframe
-                src={`https://drive.google.com/file/d/${video.youtube_video_id}/preview`}
-                className="absolute inset-0 w-full h-full border-0"
-                allow="autoplay; encrypted-media; fullscreen"
-                allowFullScreen
-                title={video.project_name}
-              />
+              drivePlayerMode === 'html5' ? (
+                <div className="absolute inset-0 w-full h-full bg-black flex items-center justify-center relative">
+                  <video
+                    ref={html5VideoRef}
+                    crossOrigin="anonymous"
+                    preload="auto"
+                    src={`/api/drive-stream/${video.youtube_video_id}`}
+                    className="w-full h-full object-contain"
+                    controls
+                    playsInline
+                    onTimeUpdate={() => {
+                      if (html5VideoRef.current) {
+                        setCurrentTimestamp(html5VideoRef.current.currentTime);
+                      }
+                    }}
+                    onLoadedMetadata={() => {
+                      if (html5VideoRef.current) {
+                        setVideoDuration(html5VideoRef.current.duration);
+                      }
+                    }}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    onError={() => {
+                      console.warn('Direct stream encountered an issue, allowing user to switch if needed');
+                    }}
+                  />
+                  {/* Mode switcher overlay button */}
+                  <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
+                    <span className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded bg-black/75 text-emerald-400 text-[10px] font-mono border border-emerald-500/30 backdrop-blur-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Synced
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setDrivePlayerMode('embed')}
+                      className="px-2.5 py-1 rounded bg-black/75 hover:bg-black text-neutral-300 hover:text-white text-[11px] font-medium border border-neutral-700/80 backdrop-blur-xs flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
+                      title="Switch to Google Drive Preview Embed player"
+                    >
+                      <Cloud size={12} className="text-blue-400" />
+                      <span>Drive Embed</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="absolute inset-0 w-full h-full relative">
+                  <iframe
+                    src={`https://drive.google.com/file/d/${video.youtube_video_id}/preview`}
+                    className="w-full h-full border-0"
+                    allow="autoplay; encrypted-media; fullscreen"
+                    allowFullScreen
+                    title={video.project_name}
+                  />
+                  {/* Mode switcher overlay button */}
+                  <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                    <a
+                      href={`https://drive.google.com/file/d/${video.youtube_video_id}/view?t=${Math.floor(currentTimestamp)}s`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2.5 py-1 rounded bg-black/75 hover:bg-black text-blue-300 hover:text-white text-[11px] font-medium border border-blue-500/30 backdrop-blur-xs flex items-center gap-1 transition-colors shadow-sm"
+                      title={`Open directly in Drive at ${formatTime(currentTimestamp)}`}
+                    >
+                      <ExternalLink size={11} />
+                      <span>Open at {formatTime(currentTimestamp)}</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setDrivePlayerMode('html5')}
+                      className="px-2.5 py-1 rounded bg-black/75 hover:bg-black text-neutral-300 hover:text-white text-[11px] font-medium border border-neutral-700/80 backdrop-blur-xs flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
+                      title="Switch back to HTML5 Direct Player with frame sync"
+                    >
+                      <Cloud size={12} className="text-emerald-400" />
+                      <span>Direct Player (Synced)</span>
+                    </button>
+                  </div>
+                </div>
+              )
             ) : (
               <YouTube
                 videoId={video.youtube_video_id}
@@ -390,10 +498,39 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
               </div>
             )}
           </div>
+
+          {/* Interactive Drive Timeline Scrubber */}
+          {isDrive && (
+            <div className="h-8 bg-neutral-950 px-3 sm:px-4 flex items-center gap-2.5 border-t border-neutral-800 text-xs shrink-0 select-none">
+              <span className="text-[11px] font-mono text-indigo-400 font-bold shrink-0">
+                {formatTime(currentTimestamp)}
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={videoDuration > 0 ? Math.floor(videoDuration) : Math.max(300, Math.floor(currentTimestamp) + 60)}
+                step={1}
+                value={Math.floor(currentTimestamp)}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setCurrentTimestamp(val);
+                  if (drivePlayerMode === 'html5' && html5VideoRef.current) {
+                    html5VideoRef.current.currentTime = val;
+                  }
+                }}
+                className="flex-1 accent-indigo-500 cursor-pointer h-1.5 bg-neutral-800 rounded-lg appearance-none"
+                title="Scrub timeline to sync timestamp"
+              />
+              <span className="text-[11px] font-mono text-neutral-400 shrink-0">
+                {videoDuration > 0 ? formatTime(videoDuration) : 'Timeline Sync'}
+              </span>
+            </div>
+          )}
+
           {/* Quick Reviewer Control Bar */}
           <div className="h-11 sm:h-12 bg-neutral-950/95 border-y md:border-b-0 md:border-t border-neutral-800 px-3 sm:px-4 flex items-center justify-between shrink-0 text-xs text-neutral-300">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {isDrive ? (
+              {isDrive && drivePlayerMode !== 'html5' ? (
                 <>
                   <button
                     type="button"
@@ -858,6 +995,7 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
         onSave={handleSaveAnnotation}
         timestamp={currentTimestamp}
         video={video}
+        videoElement={isDrive && drivePlayerMode === 'html5' ? html5VideoRef.current : null}
       />
 
       {/* High-Resolution Frame Annotation Lightbox */}

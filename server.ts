@@ -219,37 +219,153 @@ async function startServer() {
     res.json(video);
   });
 
-  // GET /api/proxy-thumbnail - Safe CORS proxy for video frame backdrop snapshots
+  // GET /api/proxy-thumbnail - Safe CORS proxy for high-resolution video frame backdrop snapshots
   app.get('/api/proxy-thumbnail', async (req, res) => {
     const { id, type } = req.query as { id?: string; type?: string };
     if (!id) return res.status(400).send('Missing id parameter');
 
     try {
-      let targetUrl = '';
       if (type === 'google_drive') {
-        targetUrl = `https://drive.google.com/thumbnail?id=${id}&sz=w1280`;
-      } else {
-        targetUrl = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+        const driveUrls = [
+          `https://drive.google.com/thumbnail?id=${id}&sz=w1920`,
+          `https://lh3.googleusercontent.com/d/${id}=w1920`,
+          `https://lh3.googleusercontent.com/d/${id}=s1920`
+        ];
+
+        for (const targetUrl of driveUrls) {
+          try {
+            const response = await fetch(targetUrl, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+              },
+              redirect: 'follow'
+            });
+            if (response.ok) {
+              const contentType = response.headers.get('content-type') || '';
+              if (!contentType.includes('text/html')) {
+                const buffer = await response.arrayBuffer();
+                if (buffer.byteLength > 1000) {
+                  res.set('Content-Type', contentType || 'image/jpeg');
+                  res.set('Cache-Control', 'public, max-age=86400');
+                  res.set('Access-Control-Allow-Origin', '*');
+                  return res.send(Buffer.from(buffer));
+                }
+              }
+            }
+          } catch {}
+        }
       }
 
-      const response = await fetch(targetUrl);
-      if (!response.ok && type !== 'google_drive') {
-        const fallback = await fetch(`https://img.youtube.com/vi/${id}/mqdefault.jpg`);
-        const fbBuffer = await fallback.arrayBuffer();
-        res.set('Content-Type', fallback.headers.get('content-type') || 'image/jpeg');
-        res.set('Cache-Control', 'public, max-age=86400');
-        res.set('Access-Control-Allow-Origin', '*');
-        return res.send(Buffer.from(fbBuffer));
+      // For YouTube, prioritize true 16:9 Full HD maxresdefault -> sddefault -> hqdefault
+      const ytCandidates = [
+        `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
+        `https://img.youtube.com/vi/${id}/sddefault.jpg`,
+        `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+      ];
+
+      for (const targetUrl of ytCandidates) {
+        try {
+          const response = await fetch(targetUrl, { redirect: 'follow' });
+          if (response.ok) {
+            const buffer = await response.arrayBuffer();
+            // Filter out 120x90 404 placeholder gifs YouTube sometimes returns (under 1500 bytes)
+            if (buffer.byteLength > 1500 || targetUrl.includes('hqdefault')) {
+              res.set('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+              res.set('Cache-Control', 'public, max-age=86400');
+              res.set('Access-Control-Allow-Origin', '*');
+              return res.send(Buffer.from(buffer));
+            }
+          }
+        } catch {
+          // try next candidate
+        }
       }
 
-      const buffer = await response.arrayBuffer();
-      res.set('Content-Type', response.headers.get('content-type') || 'image/jpeg');
-      res.set('Cache-Control', 'public, max-age=86400');
-      res.set('Access-Control-Allow-Origin', '*');
-      res.send(Buffer.from(buffer));
+      res.status(404).send('Failed to fetch thumbnail');
     } catch (e) {
       console.error('Thumbnail proxy error:', e);
       res.status(500).send('Failed to proxy thumbnail');
+    }
+  });
+
+  // GET /api/drive-stream/:id - Stream Google Drive video files with HTTP byte-range support for HTML5 video player
+  app.get('/api/drive-stream/:id', async (req, res) => {
+    const fileId = req.params.id;
+    if (!fileId) return res.status(400).send('Missing file id');
+
+    try {
+      const candidates = [
+        `https://drive.usercontent.google.com/download?id=${fileId}&export=download`,
+        `https://drive.google.com/uc?id=${fileId}&export=download`,
+      ];
+
+      for (const candidate of candidates) {
+        try {
+          const fetchHeaders: Record<string, string> = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          };
+          if (req.headers.range) {
+            fetchHeaders['Range'] = req.headers.range;
+          }
+
+          let response = await fetch(candidate, {
+            headers: fetchHeaders,
+            redirect: 'follow',
+          });
+
+          let contentType = response.headers.get('content-type') || '';
+
+          // If Google Drive returns HTML, it is likely the virus scan warning for files >25MB
+          if (response.ok && contentType.includes('text/html')) {
+            const htmlText = await response.text();
+            // Look for confirm token or download link in Google's warning page
+            const confirmMatch = htmlText.match(/name="confirm"\s+value="([^"]+)"/) || htmlText.match(/confirm=([a-zA-Z0-9_-]+)/);
+            const uuidMatch = htmlText.match(/name="uuid"\s+value="([^"]+)"/) || htmlText.match(/uuid=([a-zA-Z0-9_-]+)/);
+            
+            const cookies = response.headers.get('set-cookie');
+            if (cookies) {
+              fetchHeaders['Cookie'] = cookies.split(';')[0];
+            }
+
+            const confirmToken = confirmMatch ? confirmMatch[1] : 't';
+            const uuidParam = uuidMatch ? `&uuid=${encodeURIComponent(uuidMatch[1])}` : '';
+            const confirmedUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=${encodeURIComponent(confirmToken)}${uuidParam}`;
+
+            response = await fetch(confirmedUrl, {
+              headers: fetchHeaders,
+              redirect: 'follow',
+            });
+            contentType = response.headers.get('content-type') || '';
+          }
+
+          if (response.ok && !contentType.includes('text/html')) {
+            res.status(response.status);
+            res.set('Content-Type', contentType.startsWith('video/') ? contentType : 'video/mp4');
+            res.set('Accept-Ranges', 'bytes');
+            res.set('Access-Control-Allow-Origin', '*');
+            res.set('Access-Control-Allow-Headers', 'Range, Content-Type, Accept');
+            
+            const contentRange = response.headers.get('content-range');
+            if (contentRange) res.set('Content-Range', contentRange);
+            const contentLength = response.headers.get('content-length');
+            if (contentLength) res.set('Content-Length', contentLength);
+
+            if (response.body) {
+              const { Readable } = await import('stream');
+              // @ts-ignore
+              Readable.fromWeb(response.body).pipe(res);
+              return;
+            }
+          }
+        } catch (streamErr) {
+          console.warn('Candidate stream attempt failed:', streamErr);
+        }
+      }
+
+      res.status(404).send('Cannot stream Drive video directly');
+    } catch (e) {
+      console.error('Drive stream error:', e);
+      res.status(500).send('Stream proxy failure');
     }
   });
 

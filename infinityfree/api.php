@@ -377,33 +377,51 @@ switch ($action) {
             exit('Missing id parameter');
         }
 
-        $targetUrl = ($type === 'google_drive')
-            ? "https://drive.google.com/thumbnail?id={$id}&sz=w1280"
-            : "https://img.youtube.com/vi/{$id}/hqdefault.jpg";
-
         $ctx = stream_context_create([
             'http' => [
                 'timeout' => 5,
-                'header' => "User-Agent: Mozilla/5.0\r\n"
+                'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\r\n"
             ]
         ]);
 
-        $imageData = @file_get_contents($targetUrl, false, $ctx);
-        if ($imageData === false && $type !== 'google_drive') {
-            $fallbackUrl = "https://img.youtube.com/vi/{$id}/mqdefault.jpg";
-            $imageData = @file_get_contents($fallbackUrl, false, $ctx);
+        if ($type === 'google_drive') {
+            $driveCandidates = [
+                "https://drive.google.com/thumbnail?id={$id}&sz=w1920",
+                "https://lh3.googleusercontent.com/d/{$id}=w1920",
+                "https://lh3.googleusercontent.com/d/{$id}=s1920"
+            ];
+            foreach ($driveCandidates as $targetUrl) {
+                $imageData = @file_get_contents($targetUrl, false, $ctx);
+                if ($imageData !== false && strlen($imageData) > 1000) {
+                    header('Content-Type: image/jpeg');
+                    header('Cache-Control: public, max-age=86400');
+                    header('Access-Control-Allow-Origin: *');
+                    echo $imageData;
+                    exit;
+                }
+            }
         }
 
-        if ($imageData !== false) {
-            header('Content-Type: image/jpeg');
-            header('Cache-Control: public, max-age=86400');
-            header('Access-Control-Allow-Origin: *');
-            echo $imageData;
-            exit;
-        } else {
-            http_response_code(502);
-            exit('Failed to fetch thumbnail');
+        // For YouTube: cascade from HD 1080p/720p maxresdefault -> sddefault -> hqdefault
+        $candidates = [
+            "https://img.youtube.com/vi/{$id}/maxresdefault.jpg",
+            "https://img.youtube.com/vi/{$id}/sddefault.jpg",
+            "https://img.youtube.com/vi/{$id}/hqdefault.jpg"
+        ];
+
+        foreach ($candidates as $targetUrl) {
+            $imageData = @file_get_contents($targetUrl, false, $ctx);
+            if ($imageData !== false && (strlen($imageData) > 1500 || str_contains($targetUrl, 'hqdefault'))) {
+                header('Content-Type: image/jpeg');
+                header('Cache-Control: public, max-age=86400');
+                header('Access-Control-Allow-Origin: *');
+                echo $imageData;
+                exit;
+            }
         }
+
+        http_response_code(502);
+        exit('Failed to fetch thumbnail');
         break;
 
     default:
