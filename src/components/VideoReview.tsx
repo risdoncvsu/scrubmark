@@ -3,8 +3,12 @@ import YouTube, { YouTubeProps } from 'react-youtube';
 import type { User, Video, Comment } from '../types';
 import { formatTime, parseTimeString } from '../utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, MessageSquare, CheckCircle2, Play, Pause, ChevronRight, Share2, Copy, Check, X, Mail, Users, RotateCcw, RotateCw, Cloud, Youtube, ExternalLink, Edit3, Timer } from 'lucide-react';
+import { 
+  ArrowLeft, MessageSquare, CheckCircle2, Play, Pause, ChevronRight, Share2, Copy, Check, X, Mail, Users, 
+  RotateCcw, RotateCw, Cloud, Youtube, ExternalLink, Edit3, Timer, Camera, Maximize2, Download, Trash2 
+} from 'lucide-react';
 import clsx from 'clsx';
+import { FrameAnnotationModal } from './FrameAnnotationModal';
 
 interface VideoReviewProps {
   videoId: string;
@@ -21,6 +25,11 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   
+  // Visual annotation states
+  const [isAnnotationModalOpen, setIsAnnotationModalOpen] = useState(false);
+  const [attachedDrawing, setAttachedDrawing] = useState<string | null>(null);
+  const [previewLightboxImage, setPreviewLightboxImage] = useState<string | null>(null);
+
   // Google Drive states
   const [isSyncTimerRunning, setIsSyncTimerRunning] = useState(false);
   const [isEditingTime, setIsEditingTime] = useState(false);
@@ -148,6 +157,32 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
     }
   };
 
+  const handleOpenAnnotationModal = () => {
+    if (isDrive) {
+      setIsSyncTimerRunning(false);
+    } else if (playerRef.current) {
+      if (typeof playerRef.current.pauseVideo === 'function') {
+        playerRef.current.pauseVideo();
+        setIsPlaying(false);
+      }
+      if (typeof playerRef.current.getCurrentTime === 'function') {
+        const ct = playerRef.current.getCurrentTime();
+        if (typeof ct === 'number') {
+          setCurrentTimestamp(ct);
+        }
+      }
+    }
+    setIsAnnotationModalOpen(true);
+  };
+
+  const handleSaveAnnotation = (imageDataUrl: string) => {
+    setAttachedDrawing(imageDataUrl);
+    setIsAnnotationModalOpen(false);
+    if (!newComment.trim()) {
+      setNewComment(`See visual annotation at ${formatTime(currentTimestamp)}`);
+    }
+  };
+
   const handleTimeInputSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const parsed = parseTimeString(timeInputStr);
@@ -162,7 +197,7 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
 
   const submitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() && !attachedDrawing) return;
 
     try {
       const res = await fetch(`/api/videos/${videoId}/comments`, {
@@ -173,14 +208,16 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
           'x-user-name': user.name,
         },
         body: JSON.stringify({
-          content: newComment,
+          content: newComment.trim() || `Visual annotation at ${formatTime(currentTimestamp)}`,
           timestamp_seconds: currentTimestamp,
+          drawing_data: attachedDrawing || undefined,
         })
       });
       
       const addedComment = await res.json();
       setComments(prev => [...prev, addedComment].sort((a, b) => a.timestamp_seconds - b.timestamp_seconds));
       setNewComment('');
+      setAttachedDrawing(null);
     } catch (e) {
       console.error(e);
     }
@@ -438,6 +475,19 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                   <Edit3 size={11} className="opacity-0 group-hover:opacity-75" />
                 </button>
               )}
+
+              <div className="h-4 w-px bg-neutral-800 mx-0.5 sm:mx-1" />
+
+              {/* Freeze & Annotate Frame Button */}
+              <button
+                type="button"
+                onClick={handleOpenAnnotationModal}
+                title="Freeze frame and draw visual annotation"
+                className="px-2.5 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-300 border border-red-500/30 hover:border-red-500/60 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold shadow-xs"
+              >
+                <Camera size={13} className="text-red-400" />
+                <span>Annotate Frame</span>
+              </button>
             </div>
             <div className="hidden md:flex items-center gap-3 text-neutral-500 text-[11px]">
               {isDrive ? (
@@ -510,6 +560,34 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                         )}
                       </div>
                       <p className="text-xs sm:text-sm text-neutral-200">{comment.content}</p>
+                      {comment.drawing_data && (
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewLightboxImage(comment.drawing_data!);
+                          }}
+                          className="mt-2 rounded-lg overflow-hidden border border-neutral-700/80 bg-black group/thumb cursor-zoom-in relative max-w-full transition-transform hover:border-red-500/50 shadow-sm"
+                          title="Click to inspect frame annotation in high resolution"
+                        >
+                          <div className="aspect-video w-full relative">
+                            <img 
+                              src={comment.drawing_data} 
+                              alt={`Annotation at ${formatTime(comment.timestamp_seconds)}`}
+                              className="w-full h-full object-cover group-hover/thumb:scale-102 transition-transform duration-200"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-between p-1.5">
+                              <span className="text-[10px] font-mono text-red-300 font-semibold flex items-center gap-1 bg-black/70 px-1.5 py-0.5 rounded backdrop-blur-xs border border-red-500/30">
+                                <Camera size={10} />
+                                {formatTime(comment.timestamp_seconds)}
+                              </span>
+                              <span className="text-[10px] text-white font-medium flex items-center gap-1 bg-neutral-900/80 px-1.5 py-0.5 rounded backdrop-blur-xs border border-neutral-700">
+                                <Maximize2 size={10} />
+                                Inspect
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </motion.div>
                   ))}
                 </AnimatePresence>
@@ -540,6 +618,24 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                           <span className="text-xs font-medium text-neutral-500 line-through">{comment.author_name}</span>
                         </div>
                         <p className="text-xs sm:text-sm text-neutral-400 line-through">{comment.content}</p>
+                        {comment.drawing_data && (
+                          <div 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewLightboxImage(comment.drawing_data!);
+                            }}
+                            className="mt-2 rounded-lg overflow-hidden border border-neutral-800 bg-black group/thumb cursor-zoom-in relative max-w-full opacity-70 hover:opacity-100 transition-opacity"
+                            title="Click to inspect frame annotation in high resolution"
+                          >
+                            <div className="aspect-video w-full relative">
+                              <img 
+                                src={comment.drawing_data} 
+                                alt={`Annotation at ${formatTime(comment.timestamp_seconds)}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -549,27 +645,86 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
           </div>
 
           <div className="p-3 sm:p-4 border-t border-neutral-800 bg-neutral-950 shrink-0">
-            <form onSubmit={submitComment} className="flex flex-col gap-2">
+            <form onSubmit={submitComment} className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium text-neutral-500">At:</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-medium text-neutral-500">At:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTimeInputStr(formatTime(currentTimestamp));
+                        setIsEditingTime(true);
+                      }}
+                      title="Click to edit timestamp"
+                      className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 text-xs font-mono font-medium hover:bg-indigo-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>{formatTime(currentTimestamp)}</span>
+                      <Edit3 size={10} className="opacity-70" />
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      setTimeInputStr(formatTime(currentTimestamp));
-                      setIsEditingTime(true);
-                    }}
-                    title="Click to edit timestamp"
-                    className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 text-xs font-mono font-medium hover:bg-indigo-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                    onClick={handleOpenAnnotationModal}
+                    title="Freeze frame and draw visual feedback"
+                    className="px-2 py-0.5 rounded bg-red-600/15 hover:bg-red-600/25 text-red-300 border border-red-500/30 text-xs flex items-center gap-1 font-medium transition-colors cursor-pointer"
                   >
-                    <span>{formatTime(currentTimestamp)}</span>
-                    <Edit3 size={10} className="opacity-70" />
+                    <Camera size={11} className="text-red-400" />
+                    <span>Draw on Frame</span>
                   </button>
                 </div>
                 <span className="text-[11px] text-neutral-500">
                   As: <strong className="text-neutral-300 font-medium">{user.name}</strong>
                 </span>
               </div>
+
+              {/* Attached Annotation Preview in Comment Box */}
+              {attachedDrawing && (
+                <div className="flex items-center justify-between p-2 rounded-xl bg-neutral-900 border border-red-500/40 animate-in fade-in slide-in-from-bottom-1">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div 
+                      onClick={() => setPreviewLightboxImage(attachedDrawing)}
+                      className="w-14 h-9 rounded-md bg-black border border-neutral-700 overflow-hidden shrink-0 cursor-pointer relative group"
+                      title="Click to preview annotation"
+                    >
+                      <img src={attachedDrawing} alt="Annotated frame" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <Maximize2 size={12} className="text-white" />
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-red-400 flex items-center gap-1">
+                          <Camera size={12} />
+                          Frame Attached
+                        </span>
+                        <span className="px-1.5 py-0.2 rounded bg-neutral-800 text-[10px] font-mono text-neutral-300">
+                          {formatTime(currentTimestamp)}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-400 truncate">Visual drawing will be attached to note</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsAnnotationModalOpen(true)}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded hover:bg-neutral-800 transition-colors cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAttachedDrawing(null)}
+                      className="p-1 text-neutral-400 hover:text-red-400 rounded hover:bg-neutral-800 transition-colors cursor-pointer"
+                      title="Remove attached frame"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <textarea
                 value={newComment}
                 onChange={e => setNewComment(e.target.value)}
@@ -577,7 +732,7 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                 onKeyDown={e => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    if (newComment.trim()) {
+                    if (newComment.trim() || attachedDrawing) {
                       submitComment(e);
                     }
                   }
@@ -591,7 +746,7 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                 <span className="text-[11px] text-neutral-500 sm:hidden">Tap Post Note</span>
                 <button
                   type="submit"
-                  disabled={!newComment.trim()}
+                  disabled={!newComment.trim() && !attachedDrawing}
                   className="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer ml-auto"
                 >
                   Post Note
@@ -677,6 +832,60 @@ export function VideoReview({ videoId, user, onBack }: VideoReviewProps) {
                 >
                   Done
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Screenshot & Frame Annotation Modal */}
+      <FrameAnnotationModal
+        isOpen={isAnnotationModalOpen}
+        onClose={() => setIsAnnotationModalOpen(false)}
+        onSave={handleSaveAnnotation}
+        timestamp={currentTimestamp}
+        video={video}
+      />
+
+      {/* High-Resolution Frame Annotation Lightbox */}
+      <AnimatePresence>
+        {previewLightboxImage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-5xl w-full flex flex-col shadow-2xl overflow-hidden relative max-h-[92vh]"
+            >
+              <div className="h-12 bg-neutral-950 border-b border-neutral-800 px-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <Camera size={15} className="text-red-400" />
+                  <span className="text-sm font-semibold text-white">Annotated Frame Inspection</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={previewLightboxImage}
+                    download={`scrubmark_frame_${Math.floor(Date.now() / 1000)}.png`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs font-medium transition-colors cursor-pointer"
+                    title="Download annotated image"
+                  >
+                    <Download size={13} />
+                    <span className="hidden sm:inline">Download</span>
+                  </a>
+                  <button
+                    onClick={() => setPreviewLightboxImage(null)}
+                    className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+              <div className="p-3 sm:p-5 flex-1 flex items-center justify-center bg-black/80 overflow-auto min-h-0">
+                <img
+                  src={previewLightboxImage}
+                  alt="High-resolution annotated frame"
+                  className="max-w-full max-h-[76vh] object-contain rounded-lg shadow-2xl border border-neutral-800"
+                />
               </div>
             </motion.div>
           </div>

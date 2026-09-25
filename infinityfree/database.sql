@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS `comments` (
   `user_id` VARCHAR(64) NOT NULL,
   `author_name` VARCHAR(191) NOT NULL,
   `content` TEXT NOT NULL,
+  `drawing_data` MEDIUMTEXT NULL,
   `timestamp_seconds` DECIMAL(10, 2) NOT NULL,
   `is_resolved` TINYINT(1) DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -1005,6 +1005,11 @@
               ` : ''}
             </div>
             <p class="text-xs sm:text-sm text-neutral-200">${note.content}</p>
+            ${note.drawing_data ? `
+              <div class="mt-2 rounded-lg overflow-hidden border border-neutral-700/80 bg-black max-w-full">
+                <img src="${note.drawing_data}" alt="Annotated frame" class="w-full aspect-video object-cover" />
+              </div>
+            ` : ''}
           `;
           activeList.appendChild(card);
         });
@@ -1022,6 +1027,11 @@
               <span class="text-xs font-medium text-neutral-500 line-through">${note.author_name}</span>
             </div>
             <p class="text-xs sm:text-sm text-neutral-400 line-through">${note.content}</p>
+            ${note.drawing_data ? `
+              <div class="mt-2 rounded-lg overflow-hidden border border-neutral-800 bg-black max-w-full opacity-60">
+                <img src="${note.drawing_data}" alt="Annotated frame" class="w-full aspect-video object-cover" />
+              </div>
+            ` : ''}
           `;
           resolvedList.appendChild(card);
         });

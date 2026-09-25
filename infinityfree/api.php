@@ -211,12 +211,21 @@ switch ($action) {
     // -------------------------------------------------------------
     case 'comments':
         $videoId = $_GET['video_id'] ?? '';
-        $stmt = $db->prepare('SELECT id, video_id, user_id, author_name, content, timestamp_seconds, is_resolved, created_at FROM comments WHERE video_id = ? ORDER BY timestamp_seconds ASC, created_at ASC');
-        $stmt->execute([$videoId]);
-        $comments = $stmt->fetchAll();
+        try {
+            $stmt = $db->prepare('SELECT id, video_id, user_id, author_name, content, drawing_data, timestamp_seconds, is_resolved, created_at FROM comments WHERE video_id = ? ORDER BY timestamp_seconds ASC, created_at ASC');
+            $stmt->execute([$videoId]);
+            $comments = $stmt->fetchAll();
+        } catch (PDOException $e) {
+            $stmt = $db->prepare('SELECT id, video_id, user_id, author_name, content, timestamp_seconds, is_resolved, created_at FROM comments WHERE video_id = ? ORDER BY timestamp_seconds ASC, created_at ASC');
+            $stmt->execute([$videoId]);
+            $comments = $stmt->fetchAll();
+        }
         foreach ($comments as &$c) {
             $c['timestamp_seconds'] = (float)$c['timestamp_seconds'];
             $c['is_resolved'] = (bool)$c['is_resolved'];
+            if (!isset($c['drawing_data'])) {
+                $c['drawing_data'] = null;
+            }
         }
         jsonResponse($comments);
         break;
@@ -230,11 +239,16 @@ switch ($action) {
 
         $videoId = $body['video_id'] ?? '';
         $content = trim($body['content'] ?? '');
+        $drawingData = $body['drawing_data'] ?? null;
         $timestamp = isset($body['timestamp_seconds']) ? (float)$body['timestamp_seconds'] : 0.0;
         $authorName = trim($body['author_name'] ?? '');
 
-        if (empty($videoId) || empty($content)) {
-            jsonResponse(['error' => 'Video ID and content are required'], 400);
+        if (empty($content) && !empty($drawingData)) {
+            $content = 'Visual frame annotation';
+        }
+
+        if (empty($videoId) || (empty($content) && empty($drawingData))) {
+            jsonResponse(['error' => 'Video ID and comment content are required'], 400);
         }
 
         // Fetch video to verify it exists and get video owner's ID
@@ -264,10 +278,12 @@ switch ($action) {
 
         $commentId = bin2hex(random_bytes(16));
         try {
+            $stmt = $db->prepare('INSERT INTO comments (id, video_id, user_id, author_name, content, drawing_data, timestamp_seconds, is_resolved) VALUES (?, ?, ?, ?, ?, ?, ?, 0)');
+            $stmt->execute([$commentId, $videoId, $uid, $author, $content, $drawingData, $timestamp]);
+        } catch (PDOException $e) {
+            // Fallback if drawing_data column doesn't exist yet on user's database
             $stmt = $db->prepare('INSERT INTO comments (id, video_id, user_id, author_name, content, timestamp_seconds, is_resolved) VALUES (?, ?, ?, ?, ?, ?, 0)');
             $stmt->execute([$commentId, $videoId, $uid, $author, $content, $timestamp]);
-        } catch (PDOException $e) {
-            jsonResponse(['error' => 'Database error saving note: ' . $e->getMessage()], 500);
         }
 
         jsonResponse([
@@ -276,6 +292,7 @@ switch ($action) {
             'user_id' => $uid,
             'author_name' => $author,
             'content' => $content,
+            'drawing_data' => $drawingData,
             'timestamp_seconds' => $timestamp,
             'is_resolved' => false,
             'created_at' => date('Y-m-d H:i:s')

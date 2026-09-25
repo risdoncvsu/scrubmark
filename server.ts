@@ -70,7 +70,7 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
 
   // Basic authentication header middleware
   app.use((req, res, next) => {
@@ -196,6 +196,40 @@ async function startServer() {
     res.json(video);
   });
 
+  // GET /api/proxy-thumbnail - Safe CORS proxy for video frame backdrop snapshots
+  app.get('/api/proxy-thumbnail', async (req, res) => {
+    const { id, type } = req.query as { id?: string; type?: string };
+    if (!id) return res.status(400).send('Missing id parameter');
+
+    try {
+      let targetUrl = '';
+      if (type === 'google_drive') {
+        targetUrl = `https://drive.google.com/thumbnail?id=${id}&sz=w1280`;
+      } else {
+        targetUrl = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+      }
+
+      const response = await fetch(targetUrl);
+      if (!response.ok && type !== 'google_drive') {
+        const fallback = await fetch(`https://img.youtube.com/vi/${id}/mqdefault.jpg`);
+        const fbBuffer = await fallback.arrayBuffer();
+        res.set('Content-Type', fallback.headers.get('content-type') || 'image/jpeg');
+        res.set('Cache-Control', 'public, max-age=86400');
+        res.set('Access-Control-Allow-Origin', '*');
+        return res.send(Buffer.from(fbBuffer));
+      }
+
+      const buffer = await response.arrayBuffer();
+      res.set('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+      res.set('Cache-Control', 'public, max-age=86400');
+      res.set('Access-Control-Allow-Origin', '*');
+      res.send(Buffer.from(buffer));
+    } catch (e) {
+      console.error('Thumbnail proxy error:', e);
+      res.status(500).send('Failed to proxy thumbnail');
+    }
+  });
+
   // GET /api/videos/:id/comments - Get timestamped comments for a video
   app.get('/api/videos/:id/comments', (req, res) => {
     const comments = db.comments
@@ -211,12 +245,13 @@ async function startServer() {
 
   // POST /api/videos/:id/comments - Add a new comment at a timestamp
   app.post('/api/videos/:id/comments', (req, res) => {
-    const { content, timestamp_seconds, author_name } = req.body;
+    const { content, timestamp_seconds, author_name, drawing_data } = req.body;
     const author = req.userName || author_name || 'Client Reviewer';
     const uid = req.userId || 'reviewer_' + crypto.randomUUID().slice(0, 8);
 
-    if (!content || !content.trim()) {
-      return res.status(400).json({ error: 'Comment content is required' });
+    const textContent = content ? content.trim() : (drawing_data ? 'Visual frame annotation' : '');
+    if (!textContent && !drawing_data) {
+      return res.status(400).json({ error: 'Comment content or visual annotation is required' });
     }
     
     const newComment = {
@@ -224,8 +259,9 @@ async function startServer() {
       video_id: req.params.id,
       user_id: uid,
       author_name: author,
-      content: content.trim(),
+      content: textContent,
       timestamp_seconds: Number(timestamp_seconds) || 0,
+      drawing_data: drawing_data || null,
       is_resolved: false,
       created_at: new Date().toISOString()
     };

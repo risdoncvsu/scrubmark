@@ -23,4 +23,5 @@ export interface Comment {
   timestamp_seconds: number;
   is_resolved: boolean;
   created_at: string;
+  drawing_data?: string;
 }
