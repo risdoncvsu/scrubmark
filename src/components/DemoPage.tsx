@@ -36,6 +36,7 @@ export function DemoPage({
   const [raffleSubmitted, setRaffleSubmitted] = useState(false);
   const [ticketNumber, setTicketNumber] = useState<string | null>(null);
   const [raffleError, setRaffleError] = useState<string | null>(null);
+  const [copiedTicket, setCopiedTicket] = useState(false);
 
   // Form State: strictly Name and Email only
   const [raffleName, setRaffleName] = useState('');
@@ -108,6 +109,18 @@ export function DemoPage({
       fallbackCopy(demoUrl);
       setCopiedShareUrl(true);
       setTimeout(() => setCopiedShareUrl(false), 2500);
+    });
+  };
+
+  const handleCopyTicket = () => {
+    if (!ticketNumber) return;
+    navigator.clipboard.writeText(ticketNumber).then(() => {
+      setCopiedTicket(true);
+      setTimeout(() => setCopiedTicket(false), 2500);
+    }).catch(() => {
+      fallbackCopy(ticketNumber);
+      setCopiedTicket(true);
+      setTimeout(() => setCopiedTicket(false), 2500);
     });
   };
 
@@ -683,7 +696,7 @@ export function DemoPage({
                     Thank you for testing out our page!
                   </h1>
                   <p className="text-sm text-neutral-400 leading-relaxed">
-                    Please enter your name and email here so we can contact you if you win our raffle!
+                    Please enter your name and email here so we can contact you if you win our raffle! Once submitted, you'll receive a code — make sure to enter the code into the Google Form to be eligible!
                   </p>
                 </div>
 
@@ -752,26 +765,36 @@ export function DemoPage({
                   <Check size={24} />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <h2 className="text-xl font-bold text-white">
                     Entry Confirmed!
                   </h2>
-                  <p className="text-xs sm:text-sm text-neutral-400">
-                    We've saved your details for the participant research raffle drawing.
-                  </p>
+                  <div className="p-3 rounded-lg bg-purple-950/60 border border-purple-500/50 text-purple-200 text-xs sm:text-sm font-medium">
+                    ⚠️ Important: Make sure to enter this code into the Google Form to be eligible!
+                  </div>
                 </div>
 
                 {ticketNumber && (
-                  <div className="p-4 rounded-lg bg-neutral-950 border border-purple-500/40 inline-block min-w-[220px]">
+                  <div className="p-4 rounded-xl bg-neutral-950 border border-purple-500/50 inline-flex flex-col items-center gap-2 min-w-[240px]">
                     <div className="text-[10px] text-purple-400 uppercase tracking-widest font-mono">
-                      Raffle Ticket
+                      Your Raffle Code
                     </div>
-                    <div className="text-xl font-bold text-white font-mono mt-0.5">
+                    <div className="text-2xl font-black text-white font-mono tracking-wider">
                       {ticketNumber}
                     </div>
-                    <div className="text-xs text-neutral-400 mt-1">
+                    <div className="text-xs text-neutral-400">
                       {raffleEmail}
                     </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyTicket}
+                      className={`mt-1 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                        copiedTicket ? 'bg-purple-600 text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200'
+                      }`}
+                    >
+                      {copiedTicket ? <Check size={14} /> : <Copy size={14} />}
+                      <span>{copiedTicket ? 'Code Copied!' : 'Copy Code for Google Form'}</span>
+                    </button>
                   </div>
                 )}
 
