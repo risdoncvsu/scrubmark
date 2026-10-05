@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ScrubMark Premiere Panel</title>
+  <style>
+    body {
+      background: #232323;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 16px;
+      margin: 0;
+      font-size: 13px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #383838;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .badge {
+      background: #4f46e5;
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .time-display {
+      background: #181818;
+      border: 1px solid #383838;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .time-display h2 {
+      margin: 0 0 4px 0;
+      font-size: 24px;
+      font-family: monospace;
+      color: #818cf8;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: none;
+      background: #4f46e5;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+      text-align: center;
+      text-decoration: none;
+    }
+    .btn:hover { background: #4338ca; }
+    .btn-secondary { background: #383838; color: #fff; }
+    .btn-secondary:hover { background: #454545; }
+    .input {
+      width: 100%;
+      box-sizing: border-box;
+      background: #181818;
+      border: 1px solid #383838;
+      color: #fff;
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .status {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 14px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <strong style="font-size: 14px;">ScrubMark Review</strong>
+    <span class="badge">Premiere CEP</span>
+  </div>
+
+  <div class="time-display">
+    <div style="font-size: 11px; color: #888; text-transform: uppercase;">Sequence Playhead</div>
+    <h2 id="timecode">00:00:00:00</h2>
+    <button type="button" class="btn btn-secondary" style="padding: 4px 8px; margin: 0 auto; width: auto; font-size: 11px;" onclick="syncTimecode()">Sync Playhead</button>
+  </div>
+
+  <div>
+    <label style="display:block; margin-bottom: 4px; font-size: 11px; color: #aaa;">Add Review Marker to Sequence:</label>
+    <input type="text" id="markerText" class="input" placeholder="e.g. Cut 3 frames earlier, color grade here" />
+    <button class="btn" onclick="addMarker()">Add Marker at Playhead</button>
+  </div>
+
+  <hr style="border: none; border-top: 1px solid #383838; margin: 16px 0;" />
+
+  <button class="btn btn-secondary" onclick="exportFrame()">
+    📸 Export Current Frame & Annotate
+  </button>
+
+  <div class="status" id="statusLog">
+    Ready. Connects sequence timeline with ScrubMark notes.
+  </div>
+
+  <script>
+    const csInterface = window.__adobe_cep__ ? new CSInterface() : null;
+
+    function syncTimecode() {
+      if (csInterface) {
+        csInterface.evalScript('getSequencePlayheadSeconds()', function(result) {
+          const sec = parseFloat(result);
+          if (sec >= 0) {
+            const mins = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            document.getElementById('timecode').textContent = `${mins}:${s < 10 ? '0' : ''}${s}`;
+            document.getElementById('statusLog').textContent = `Playhead synced at ${sec}s`;
+          } else {
+            document.getElementById('statusLog').textContent = 'No active sequence open in Premiere.';
+          }
+        });
+      } else {
+        document.getElementById('statusLog').textContent = 'Running outside Premiere environment (preview mode).';
+      }
+    }
+
+    function addMarker() {
+      const text = document.getElementById('markerText').value.trim();
+      if (!text) return;
+      if (csInterface) {
+        csInterface.evalScript(`getSequencePlayheadSeconds()`, function(sec) {
+          const s = parseFloat(sec);
+          if (s >= 0) {
+            csInterface.evalScript(`addSequenceMarker(${s}, "${text.replace(/"/g, '\\"')}", "Director")`, function(res) {
+              document.getElementById('statusLog').textContent = '✅ Marker added to timeline!';
+              document.getElementById('markerText').value = '';
+            });
+          }
+        });
+      }
+    }
+
+    function exportFrame() {
+      if (csInterface) {
+        csInterface.evalScript('exportCurrentFrameToTemp()', function(filePath) {
+          if (filePath) {
+            document.getElementById('statusLog').textContent = `✅ Frame exported to ${filePath}`;
+          }
+        });
+      }
+    }
+
+    // Auto-sync playhead every 1 second
+    setInterval(syncTimecode, 1500);
+  </script>
+</body>
+</html>

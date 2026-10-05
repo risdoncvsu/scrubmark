@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "ScrubMark - Video Review & Frame Capture",
+  "version": "1.0.0",
+  "description": "Instant 1-click video frame capture and timecoded annotation for YouTube and Google Drive without CORS restrictions.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://drive.google.com/*",
+    "*://*.googleusercontent.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://drive.google.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ScrubMark Frame Capture"
+  }
+}

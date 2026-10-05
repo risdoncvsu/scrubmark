@@ -484,12 +484,15 @@
           </div>
         </div>
 
-        <!-- History, Upload & Close -->
+        <!-- History, Screenshot, Upload & Close -->
         <div class="flex items-center gap-1.5 shrink-0">
-          <button type="button" onclick="captureExactFrame()" title="Snap exact paused frame from screen or browser tab" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer transition-colors shadow-sm">
+          <button type="button" onclick="takeBrowserTabScreenshot()" title="Screenshot active tab directly (No CORS pixel extraction)" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer transition-colors shadow-xs">
             <i data-lucide="camera" class="w-3.5 h-3.5"></i>
-            <span class="hidden sm:inline">Snap Exact Frame</span>
-            <span class="sm:hidden">Snap</span>
+            <span class="hidden md:inline">Screenshot Tab</span>
+          </button>
+          <button type="button" onclick="pasteClipboardScreenshot()" title="Paste screenshot from clipboard (Ctrl+V)" class="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium cursor-pointer transition-colors">
+            <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
+            <span>Paste</span>
           </button>
           <label class="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium cursor-pointer transition-colors" title="Upload custom frame screenshot">
             <i data-lucide="upload" class="w-3.5 h-3.5"></i>
@@ -529,21 +532,6 @@
         <span class="text-xs text-neutral-400 whitespace-nowrap">Text Label:</span>
         <input type="text" id="annotationCustomText" value="Check this frame" class="flex-1 bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1 text-xs text-white outline-none focus:border-indigo-500">
         <span class="text-[11px] text-neutral-400 hidden sm:inline">Click anywhere to place text. <strong>Double-click any text</strong> to edit!</span>
-      </div>
-
-      <!-- Thumbnail Fallback Notice Bar -->
-      <div id="annotationFallbackBanner" class="bg-amber-500/10 border-b border-amber-500/30 px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-amber-200">
-        <div class="flex items-center gap-1.5">
-          <i data-lucide="info" class="w-4 h-4 text-amber-400 shrink-0"></i>
-          <span>Showing video cover thumbnail. External iframe (YouTube / Drive) restricts direct pixel extraction.</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="captureExactFrame()" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors shadow-xs">
-            <i data-lucide="camera" class="w-3 h-3"></i>
-            <span>Snap Exact Video Frame</span>
-          </button>
-          <span class="text-neutral-400 text-[11px] hidden md:inline">or press <strong>Ctrl+V</strong> after screenshot</span>
-        </div>
       </div>
 
       <!-- Canvas Area -->
@@ -1743,60 +1731,6 @@
       }
     }
 
-    async function captureExactFrame() {
-      try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: { displaySurface: 'browser' },
-          audio: false
-        });
-
-        const track = stream.getVideoTracks()[0];
-        const tempVideo = document.createElement('video');
-        tempVideo.srcObject = stream;
-        tempVideo.muted = true;
-        tempVideo.playsInline = true;
-        await tempVideo.play();
-        await new Promise(r => setTimeout(r, 80));
-
-        const canvas = document.getElementById('annotationCanvas');
-        if (canvas) {
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#0a0a0a';
-            ctx.fillRect(0, 0, 1280, 720);
-
-            const canvasRatio = 1280 / 720;
-            const vW = tempVideo.videoWidth || 1280;
-            const vH = tempVideo.videoHeight || 720;
-            const imgRatio = vW / vH;
-
-            let drawW = 1280;
-            let drawH = 720;
-            let drawX = 0;
-            let drawY = 0;
-            if (imgRatio > canvasRatio) {
-              drawH = 1280 / imgRatio;
-              drawY = (720 - drawH) / 2;
-            } else if (imgRatio < canvasRatio) {
-              drawW = 720 * imgRatio;
-              drawX = (1280 - drawW) / 2;
-            }
-            ctx.drawImage(tempVideo, drawX, drawY, drawW, drawH);
-            drawCanvasWatermark(ctx, annotationFrozenTimestamp);
-            canvasHistory = [ctx.getImageData(0, 0, 1280, 720)];
-            const banner = document.getElementById('annotationFallbackBanner');
-            if (banner) banner.classList.add('hidden');
-          }
-        }
-        tempVideo.pause();
-        tempVideo.srcObject = null;
-        track.stop();
-        stream.getTracks().forEach(t => t.stop());
-      } catch (err) {
-        console.warn('Screen capture cancelled or unavailable:', err);
-      }
-    }
-
     function handleAnnotationImageUpload(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -1832,6 +1766,113 @@
       };
       reader.readAsDataURL(file);
     }
+
+    async function takeBrowserTabScreenshot() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        alert('Direct screen capture is not supported in this browser. You can press PrintScreen (or Cmd+Shift+4) and press Ctrl+V to paste your frame directly!');
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: 'browser', frameRate: { ideal: 30 } },
+          preferCurrentTab: true,
+          audio: false
+        });
+        const video = document.createElement('video');
+        video.playsInline = true;
+        video.muted = true;
+        video.srcObject = stream;
+        await new Promise((resolve) => {
+          video.onloadedmetadata = () => video.play().then(resolve);
+          setTimeout(resolve, 1500);
+        });
+        await new Promise(r => setTimeout(r, 120));
+
+        const canvas = document.getElementById('annotationCanvas');
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, 1280, 720);
+            ctx.drawImage(video, 0, 0, 1280, 720);
+            drawCanvasWatermark(ctx, annotationFrozenTimestamp);
+            canvasHistory.push(ctx.getImageData(0, 0, 1280, 720));
+          }
+        }
+        stream.getTracks().forEach(t => t.stop());
+      } catch (err) {
+        console.warn('Screenshot cancelled:', err);
+      }
+    }
+
+    async function pasteClipboardScreenshot() {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        try {
+          const items = await navigator.clipboard.read();
+          for (const item of items) {
+            const imgType = item.types.find(t => t.startsWith('image/'));
+            if (imgType) {
+              const blob = await item.getType(imgType);
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                  const canvas = document.getElementById('annotationCanvas');
+                  if (!canvas) return;
+                  const ctx = canvas.getContext('2d');
+                  if (!ctx) return;
+                  ctx.fillStyle = '#0a0a0a';
+                  ctx.fillRect(0, 0, 1280, 720);
+                  ctx.drawImage(img, 0, 0, 1280, 720);
+                  drawCanvasWatermark(ctx, annotationFrozenTimestamp);
+                  canvasHistory.push(ctx.getImageData(0, 0, 1280, 720));
+                };
+                img.src = e.target.result;
+              };
+              reader.readAsDataURL(blob);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Clipboard read error:', e);
+        }
+      }
+      alert('Press Ctrl+V (or Cmd+V on Mac) to paste your frame screenshot directly!');
+    }
+
+    window.addEventListener('paste', (e) => {
+      const modal = document.getElementById('annotationModal');
+      const isModalOpen = modal && !modal.classList.contains('hidden');
+      if (!isModalOpen) return;
+
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.getElementById('annotationCanvas');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(0, 0, 1280, 720);
+                ctx.drawImage(img, 0, 0, 1280, 720);
+                drawCanvasWatermark(ctx, annotationFrozenTimestamp);
+                canvasHistory.push(ctx.getImageData(0, 0, 1280, 720));
+              };
+              img.src = ev.target.result;
+            };
+            reader.readAsDataURL(blob);
+            break;
+          }
+        }
+      }
+    });
 
     function renderCanvasTextOverlay() {
       const overlay = document.getElementById('canvasTextOverlay');

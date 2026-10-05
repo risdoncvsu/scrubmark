@@ -1,0 +1,26 @@
+{
+  "users": [
+    {
+      "id": "demo-user-1",
+      "name": "Demo Creator",
+      "email": "demo@scrubmark.com",
+      "salt": "315277cee782bff2cef8c0de50423ca8",
+      "hash": "e75cd6030a93a091f54f2ed0d0f9b040f4c5e707d17a48a48baef0c780568d35903c352a7a808faeb0cbb2df7ad344ecbd398707972f76edf4d6fda3ff2071a7",
+      "created_at": "2026-10-05T13:29:10.539Z"
+    }
+  ],
+  "videos": [],
+  "comments": [],
+  "raffle_entries": [
+    {
+      "id": "5d3f803b-9c02-4e08-9b0a-5dd28cf798ec",
+      "ticket_number": "SCRUB-3582",
+      "name": "Test Tester",
+      "email": "tester@example.com",
+      "role": "Video Editor",
+      "feedback": "Great tutorial flow!",
+      "rating": 5,
+      "created_at": "2026-10-05T13:29:48.760Z"
+    }
+  ]
+}

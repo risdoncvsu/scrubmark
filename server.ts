@@ -15,9 +15,10 @@ interface Database {
   users: any[];
   videos: any[];
   comments: any[];
+  raffle_entries: any[];
 }
 
-let db: Database = { users: [], videos: [], comments: [] };
+let db: Database = { users: [], videos: [], comments: [], raffle_entries: [] };
 
 if (fs.existsSync(DB_FILE)) {
   try {
@@ -25,6 +26,7 @@ if (fs.existsSync(DB_FILE)) {
     if (!db.users) db.users = [];
     if (!db.videos) db.videos = [];
     if (!db.comments) db.comments = [];
+    if (!db.raffle_entries) db.raffle_entries = [];
   } catch (e) {}
 }
 
@@ -384,13 +386,12 @@ async function startServer() {
 
   // POST /api/videos/:id/comments - Add a new comment at a timestamp
   app.post('/api/videos/:id/comments', (req, res) => {
-    const { content, timestamp_seconds, author_name, drawing_data } = req.body;
+    const { content, timestamp_seconds, author_name } = req.body;
     const author = req.userName || author_name || 'Client Reviewer';
     const uid = req.userId || 'reviewer_' + crypto.randomUUID().slice(0, 8);
 
-    const textContent = content ? content.trim() : (drawing_data ? 'Visual frame annotation' : '');
-    if (!textContent && !drawing_data) {
-      return res.status(400).json({ error: 'Comment content or visual annotation is required' });
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'Comment content is required' });
     }
     
     const newComment = {
@@ -398,9 +399,8 @@ async function startServer() {
       video_id: req.params.id,
       user_id: uid,
       author_name: author,
-      content: textContent,
+      content: content.trim(),
       timestamp_seconds: Number(timestamp_seconds) || 0,
-      drawing_data: drawing_data || null,
       is_resolved: false,
       created_at: new Date().toISOString()
     };
@@ -429,6 +429,40 @@ async function startServer() {
     saveDb();
     
     res.json({ success: true });
+  });
+
+  // POST /api/raffle-entries - Save participant research raffle entries
+  app.post('/api/raffle-entries', (req, res) => {
+    const { name, email, role, feedback, rating } = req.body;
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Name and email are required for the raffle entry.' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+
+    const newEntry = {
+      id: crypto.randomUUID(),
+      ticket_number: `SCRUB-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: name.trim(),
+      email: cleanEmail,
+      role: role ? String(role).trim() : 'Video Creator / Reviewer',
+      feedback: feedback ? String(feedback).trim() : '',
+      rating: Number(rating) || 5,
+      created_at: new Date().toISOString()
+    };
+
+    if (!db.raffle_entries) db.raffle_entries = [];
+    db.raffle_entries.push(newEntry);
+    saveDb();
+
+    res.json({ success: true, entry: newEntry });
+  });
+
+  // GET /api/raffle-entries - Retrieve all participant research raffle entries
+  app.get('/api/raffle-entries', (req, res) => {
+    res.json(db.raffle_entries || []);
   });
 
   // Vite middleware for development / Static file serving for production

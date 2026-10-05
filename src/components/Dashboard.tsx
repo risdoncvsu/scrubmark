@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import type { User, Video } from '../types';
 import { detectVideoSource } from '../utils';
-import { Plus, Video as VideoIcon, Clock, ChevronRight, User as UserIcon, Share2, Check, Cloud, Youtube, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Video as VideoIcon, Clock, ChevronRight, User as UserIcon, Share2, Check, Cloud, Youtube, Trash2, AlertTriangle, Sparkles, Gift } from 'lucide-react';
 
 interface DashboardProps {
   user: User;
   onSelectVideo: (videoId: string) => void;
   onLogout: () => void;
+  onOpenTour?: () => void;
 }
 
-export function Dashboard({ user, onSelectVideo, onLogout }: DashboardProps) {
+export function Dashboard({ user, onSelectVideo, onLogout, onOpenTour }: DashboardProps) {
   const [videos, setVideos] = useState<Video[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -139,6 +140,16 @@ export function Dashboard({ user, onSelectVideo, onLogout }: DashboardProps) {
             <span className="font-bold text-neutral-900 text-lg">ScrubMark</span>
           </div>
           <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-neutral-600">
+            {onOpenTour && (
+              <button
+                type="button"
+                onClick={onOpenTour}
+                className="px-2.5 py-1 rounded-md border border-neutral-300 hover:bg-neutral-100 hover:text-purple-700 text-neutral-600 text-xs font-medium transition-colors cursor-pointer"
+                title="Open interactive demo walkthrough"
+              >
+                Demo Page
+              </button>
+            )}
             <span className="truncate max-w-[130px] sm:max-w-none">Signed in as <strong>{user.name}</strong></span>
             <button onClick={onLogout} className="hover:text-neutral-900 underline shrink-0 cursor-pointer">Logout</button>
           </div>
@@ -189,6 +200,24 @@ export function Dashboard({ user, onSelectVideo, onLogout }: DashboardProps) {
                     className="w-full px-3 py-2.5 border border-neutral-300 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none text-base sm:text-sm text-neutral-900"
                     placeholder="https://youtube.com/watch?v=... or https://drive.google.com/file/d/..."
                   />
+
+                  {/* Quick Sample Link Fill for User Research Participants */}
+                  <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                    <span className="text-neutral-500">Testing our page?</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVideoUrl('https://www.youtube.com/watch?v=3iRUwVzRDZQ&t');
+                        if (!projectName.trim()) {
+                          setProjectName('Cyberpunk City Edit (Sample Cut)');
+                        }
+                        if (error) setError('');
+                      }}
+                      className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer underline flex items-center gap-1"
+                    >
+                      <span>Fill Sample YouTube Link (3iRUwVzRDZQ)</span>
+                    </button>
+                  </div>
 
                   {/* Auto-detected source indicator */}
                   {detectedSource && (

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import type { User } from '../types';
-import { Video, Mail, Lock, User as UserIcon, ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles, AlertCircle } from 'lucide-react';
+import { Video, Mail, Lock, User as UserIcon, ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles, AlertCircle, Gift } from 'lucide-react';
 
 interface AuthProps {
   onLogin: (user: User) => void;
   inviteVideoId?: string | null;
+  onOpenTour?: () => void;
 }
 
-export function Auth({ onLogin, inviteVideoId }: AuthProps) {
+export function Auth({ onLogin, inviteVideoId, onOpenTour }: AuthProps) {
   const [mode, setMode] = useState<'reviewer' | 'login' | 'signup'>(inviteVideoId ? 'reviewer' : 'login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -314,6 +315,19 @@ export function Auth({ onLogin, inviteVideoId }: AuthProps) {
             </div>
           )}
         </div>
+
+        {/* Subtle link to Demo Page */}
+        {onOpenTour && (
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={onOpenTour}
+              className="text-xs text-neutral-400 hover:text-purple-400 transition-colors cursor-pointer"
+            >
+              Want to try the interactive walkthrough? <span className="underline text-purple-400">View Demo Page</span>
+            </button>
+          </div>
+        )}
 
         {/* Feature Highlights */}
         <div className="mt-8 grid grid-cols-3 gap-3 text-center">
