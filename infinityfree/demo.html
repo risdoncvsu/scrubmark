@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScrubMark - Interactive Demo & Walkthrough</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-neutral-950 text-neutral-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Top Navbar -->
+  <header class="border-b border-neutral-800 bg-neutral-950/90 sticky top-0 z-30 backdrop-blur-md">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="p-1.5 rounded-lg border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors" title="Return to ScrubMark app">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        </a>
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white shadow-sm">
+            <i data-lucide="video" class="w-4 h-4"></i>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="font-bold text-white tracking-tight text-base sm:text-lg">ScrubMark</span>
+            <span class="text-[11px] font-mono uppercase tracking-wider text-purple-400 bg-purple-950/60 border border-purple-800/60 px-1.5 py-0.5 rounded">
+              Interactive Demo
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Copy Page Link Widget -->
+      <div class="flex items-center gap-2">
+        <div class="hidden sm:flex items-center bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-neutral-400 font-mono">
+          <span class="text-neutral-500 mr-1.5">Link:</span>
+          <span id="demoFullUrlDisplay" class="truncate max-w-[180px] md:max-w-[240px] text-neutral-300"></span>
+        </div>
+        <button type="button" onclick="copyDemoPageUrl()" id="demoCopyBtn" class="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span id="demoCopyBtnText">Copy Page Link</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stepper Tabs -->
+    <div class="border-t border-neutral-800/60 bg-neutral-950 px-4 sm:px-6 py-2.5">
+      <div class="max-w-5xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button type="button" onclick="setDemoStep(1)" id="stepTab1" class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-600 text-white cursor-pointer">
+            <span class="font-mono text-[11px]">1</span>
+            <span class="hidden md:inline">Introduction</span>
+          </button>
+          <button type="button" onclick="setDemoStep(2)" id="stepTab2" class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800 cursor-pointer">
+            <span class="font-mono text-[11px]">2</span>
+            <span class="hidden md:inline">Add Video</span>
+          </button>
+          <button type="button" onclick="setDemoStep(3)" id="stepTab3" class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800 cursor-pointer">
+            <span class="font-mono text-[11px]">3</span>
+            <span class="hidden md:inline">Sample Link</span>
+          </button>
+          <button type="button" onclick="setDemoStep(4)" id="stepTab4" class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800 cursor-pointer">
+            <span class="font-mono text-[11px]">4</span>
+            <span class="hidden md:inline">Live Demo</span>
+          </button>
+          <button type="button" onclick="setDemoStep(5)" id="stepTab5" class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800 cursor-pointer">
+            <span class="font-mono text-[11px]">5</span>
+            <span class="hidden md:inline">Raffle Entry</span>
+          </button>
+        </div>
+        <div id="stepCounter" class="text-xs text-neutral-500 font-mono">Step 1 of 5</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Demo Content -->
+  <main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <!-- STEP 1: Introduction -->
+    <div id="demoStep1" class="space-y-8">
+      <div>
+        <span class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Step 1: Introduction</span>
+        <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-1">Video Review Without Friction</h1>
+        <p class="text-sm sm:text-base text-neutral-400 mt-2 leading-relaxed max-w-2xl">
+          ScrubMark is a clean, minimal workspace for creators, video editors, and clients. Review cuts frame-by-frame, scrub smoothly, and leave synchronized timestamped feedback with zero logins required for reviewers.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-5 rounded-xl bg-neutral-900/70 border border-neutral-800 space-y-2.5">
+          <div class="w-8 h-8 rounded-lg bg-purple-950 text-purple-400 border border-purple-800/60 flex items-center justify-center font-mono text-sm font-semibold">1</div>
+          <h2 class="text-base font-semibold text-white">Frame Timestamps</h2>
+          <p class="text-xs text-neutral-400 leading-relaxed">
+            Pause anywhere to link notes directly to that exact second. Clicking any note instantly seeks the video to that moment.
+          </p>
+        </div>
+        <div class="p-5 rounded-xl bg-neutral-900/70 border border-neutral-800 space-y-2.5">
+          <div class="w-8 h-8 rounded-lg bg-purple-950 text-purple-400 border border-purple-800/60 flex items-center justify-center font-mono text-sm font-semibold">2</div>
+          <h2 class="text-base font-semibold text-white">Client Sharing</h2>
+          <p class="text-xs text-neutral-400 leading-relaxed">
+            Send clients a single link. They can scrub through video cuts and comment directly in their web browser without creating accounts.
+          </p>
+        </div>
+        <div class="p-5 rounded-xl bg-neutral-900/70 border border-neutral-800 space-y-2.5">
+          <div class="w-8 h-8 rounded-lg bg-purple-950 text-purple-400 border border-purple-800/60 flex items-center justify-center font-mono text-sm font-semibold">3</div>
+          <h2 class="text-base font-semibold text-white">Zero Upload Friction</h2>
+          <p class="text-xs text-neutral-400 leading-relaxed">
+            Paste public or unlisted YouTube links or Google Drive URLs. Skip multi-gigabyte uploads and re-rendering delays.
+          </p>
+        </div>
+      </div>
+
+      <div class="pt-6 border-t border-neutral-800 flex items-center justify-between">
+        <span class="text-xs text-neutral-500">Quick 2-minute walkthrough & raffle entry</span>
+        <button type="button" onclick="setDemoStep(2)" class="px-6 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm">
+          <span>Let's Go</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Adding a Video -->
+    <div id="demoStep2" class="hidden space-y-8">
+      <div>
+        <span class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Step 2: Adding a Video</span>
+        <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-1">How Creators Add Videos</h1>
+        <p class="text-sm sm:text-base text-neutral-400 mt-2 leading-relaxed max-w-2xl">
+          Starting a review room is instant. You don't have to upload video files. Simply paste an existing public or unlisted YouTube cut or Google Drive video URL.
+        </p>
+      </div>
+
+      <div class="p-6 rounded-xl bg-neutral-900/70 border border-neutral-800 space-y-4 max-w-xl">
+        <div class="space-y-1.5">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400">Project Title</label>
+          <input type="text" disabled value="Cyberpunk City Edit (Sample Cut)" class="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3.5 py-2.5 text-xs text-neutral-200 font-medium">
+        </div>
+        <div class="space-y-1.5">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400">Video Source URL</label>
+          <input type="text" disabled value="https://www.youtube.com/watch?v=3iRUwVzRDZQ&t" class="w-full bg-neutral-950 border border-purple-500/50 rounded-lg px-3.5 py-2.5 text-xs text-purple-300 font-mono">
+          <p class="text-[11px] text-neutral-500 mt-1">Supports unlisted YouTube videos or Google Drive shared review cuts.</p>
+        </div>
+      </div>
+
+      <div class="pt-6 border-t border-neutral-800 flex items-center justify-between">
+        <button type="button" onclick="setDemoStep(1)" class="px-4 py-2 rounded-lg border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-900 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span>Back</span>
+        </button>
+        <button type="button" onclick="setDemoStep(3)" class="px-6 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm">
+          <span>Next: Get Sample Link</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Sample Video Link -->
+    <div id="demoStep3" class="hidden space-y-8">
+      <div>
+        <span class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Step 3: Sample Link</span>
+        <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-1">Sample Video Link</h1>
+        <p class="text-sm sm:text-base text-neutral-400 mt-2 leading-relaxed max-w-2xl">
+          We've prepared a sample video cut for testing. Copy this link to try it in your workspace, or proceed directly to the live interactive demo:
+        </p>
+      </div>
+
+      <div class="p-6 rounded-xl bg-neutral-900/70 border border-neutral-800 space-y-4 max-w-xl">
+        <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400">Sample YouTube URL</label>
+        <div class="flex items-center gap-2">
+          <input type="text" readonly id="demoSampleInput" value="https://www.youtube.com/watch?v=3iRUwVzRDZQ&t" class="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3.5 py-2.5 text-xs text-neutral-200 font-mono select-all outline-none">
+          <button type="button" onclick="copySampleVideoLink()" id="demoCopySampleBtn" class="px-4 py-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer bg-neutral-800 hover:bg-neutral-700 text-neutral-200 shrink-0">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span id="demoCopySampleBtnText">Copy link</span>
+          </button>
+        </div>
+        <div class="text-[11px] text-neutral-500 font-mono">
+          YouTube ID: <span class="text-purple-400 font-bold">3iRUwVzRDZQ</span>
+        </div>
+      </div>
+
+      <div class="pt-6 border-t border-neutral-800 flex items-center justify-between">
+        <button type="button" onclick="setDemoStep(2)" class="px-4 py-2 rounded-lg border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-900 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span>Back</span>
+        </button>
+        <button type="button" onclick="setDemoStep(4)" class="px-6 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm">
+          <span>Next: Try Live Demo</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Live Interactive Player Demo -->
+    <div id="demoStep4" class="hidden space-y-6">
+      <div>
+        <span class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Step 4: Interactive Demo</span>
+        <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-1">Timestamping & Client Sharing Demo</h1>
+        <p class="text-sm text-neutral-400 mt-1 leading-relaxed max-w-2xl">
+          Test the timeline controls below: click timestamp badges to jump to exact frames, add a test comment, or copy the client review share link.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-7 space-y-3">
+          <div class="aspect-video w-full bg-black rounded-xl overflow-hidden border border-neutral-800 relative">
+            <iframe id="demoIframe" src="https://www.youtube-nocookie.com/embed/3iRUwVzRDZQ?autoplay=0&controls=1&rel=0" title="Sample Research Video" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+            <div class="absolute top-2.5 left-2.5 pointer-events-none">
+              <span id="demoLiveTimeBadge" class="px-2.5 py-1 rounded bg-black/85 text-purple-300 font-mono text-xs border border-purple-500/30">0:15</span>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-neutral-900/70 border border-neutral-800 space-y-2">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Seek Timeline By Timestamp:</div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button type="button" onclick="seekDemoTime(15)" class="demo-seek-btn px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer bg-purple-600 text-white font-semibold shadow-sm" data-sec="15">0:15</button>
+              <button type="button" onclick="seekDemoTime(30)" class="demo-seek-btn px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer bg-neutral-800 text-neutral-300 hover:text-white" data-sec="30">0:30</button>
+              <button type="button" onclick="seekDemoTime(42)" class="demo-seek-btn px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer bg-neutral-800 text-neutral-300 hover:text-white" data-sec="42">0:42</button>
+              <button type="button" onclick="seekDemoTime(60)" class="demo-seek-btn px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer bg-neutral-800 text-neutral-300 hover:text-white" data-sec="60">1:00</button>
+              <button type="button" onclick="seekDemoTime(78)" class="demo-seek-btn px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer bg-neutral-800 text-neutral-300 hover:text-white" data-sec="78">1:18</button>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-neutral-900/70 border border-neutral-800 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-white flex items-center gap-1.5">
+                <i data-lucide="share-2" class="w-3.5 h-3.5 text-purple-400"></i>
+                Client Review Share Link
+              </span>
+              <span class="text-[10px] text-purple-400 font-mono uppercase bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-800/40">No Login Required</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="text" readonly id="demoShareLinkInput" class="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 font-mono select-all outline-none">
+              <button type="button" onclick="copyDemoShareLink()" id="demoShareLinkBtn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer bg-neutral-800 hover:bg-neutral-700 text-neutral-200 shrink-0">
+                <span id="demoShareLinkBtnText">Copy</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 rounded-xl border border-neutral-800 bg-neutral-900/70 flex flex-col overflow-hidden">
+          <div class="p-3.5 border-b border-neutral-800 flex items-center justify-between">
+            <span class="text-xs font-semibold text-white flex items-center gap-1.5">
+              <i data-lucide="message-square" class="w-3.5 h-3.5 text-purple-400"></i>
+              <span id="demoNotesCount">Synced Notes (3)</span>
+            </span>
+            <span class="text-[11px] text-purple-400 font-mono">Live</span>
+          </div>
+
+          <div id="demoNotesList" class="flex-1 p-3.5 space-y-2.5 overflow-y-auto max-h-[300px]"></div>
+
+          <form onsubmit="handleDemoAddComment(event)" class="p-3.5 border-t border-neutral-800 bg-neutral-950/50 space-y-2">
+            <div class="text-[11px] text-neutral-400 flex items-center justify-between">
+              <span>Add note at timestamp:</span>
+              <span id="demoFormTimestamp" class="font-mono text-purple-300 font-medium">0:15</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="text" id="demoCommentText" placeholder="Type feedback note..." required class="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-purple-500 transition-colors">
+              <button type="submit" class="px-3.5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition-colors cursor-pointer shrink-0">Post</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="pt-6 border-t border-neutral-800 flex items-center justify-between">
+        <button type="button" onclick="setDemoStep(3)" class="px-4 py-2 rounded-lg border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-900 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span>Back</span>
+        </button>
+        <button type="button" onclick="setDemoStep(5)" class="px-6 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm">
+          <span>Next: Enter Raffle</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Research Raffle Entry (NAME AND EMAIL ONLY) -->
+    <div id="demoStep5" class="hidden max-w-lg mx-auto space-y-6">
+      <div id="raffleFormBox" class="space-y-6">
+        <div class="text-center space-y-2">
+          <span class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Final Step</span>
+          <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">Thank you for testing out our page!</h1>
+          <p class="text-sm text-neutral-400 leading-relaxed">
+            Please enter your name and email here so we can contact you if you win our raffle!
+          </p>
+        </div>
+
+        <form onsubmit="handleRaffleSubmit(event)" class="p-6 sm:p-8 rounded-xl bg-neutral-900/70 border border-neutral-800 space-y-4">
+          <div id="raffleError" class="hidden p-3 rounded-lg bg-red-950/40 border border-red-900/60 text-red-300 text-xs"></div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-300">Name</label>
+            <input type="text" id="raffleName" required placeholder="Your name" class="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3.5 py-2.5 text-sm text-white outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors">
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-300">Email</label>
+            <input type="email" id="raffleEmail" required placeholder="name@example.com" class="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3.5 py-2.5 text-sm text-white outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors">
+          </div>
+
+          <button type="submit" id="raffleSubmitBtn" class="w-full mt-2 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-2">
+            <span id="raffleSubmitBtnText">Submit Raffle Entry</span>
+          </button>
+        </form>
+
+        <div class="text-center">
+          <button type="button" onclick="setDemoStep(4)" class="text-xs text-neutral-500 hover:text-neutral-400 transition-colors cursor-pointer">
+            ← Review demo player again
+          </button>
+        </div>
+      </div>
+
+      <div id="raffleSuccessBox" class="hidden p-8 rounded-xl bg-neutral-900/70 border border-neutral-800 text-center space-y-5">
+        <div class="w-12 h-12 rounded-full bg-purple-950 border border-purple-800/80 text-purple-400 flex items-center justify-center mx-auto">
+          <i data-lucide="check" class="w-6 h-6"></i>
+        </div>
+
+        <div class="space-y-1.5">
+          <h2 class="text-xl font-bold text-white">Entry Confirmed!</h2>
+          <p class="text-xs sm:text-sm text-neutral-400">
+            We've saved your details for the participant research raffle drawing.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-lg bg-neutral-950 border border-purple-500/40 inline-block min-w-[220px]">
+          <div class="text-[10px] text-purple-400 uppercase tracking-widest font-mono">Raffle Ticket</div>
+          <div id="raffleTicketDisplay" class="text-xl font-bold text-white font-mono mt-0.5">SCRUB-4912</div>
+          <div id="raffleEmailDisplay" class="text-xs text-neutral-400 mt-1"></div>
+        </div>
+
+        <div class="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <a href="index.html" class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition-colors text-center">
+            Go to Workspace
+          </a>
+          <button type="button" onclick="restartDemo()" class="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs transition-colors cursor-pointer">
+            Restart Demo
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-neutral-800/80 py-6 px-4 text-center text-xs text-neutral-500">
+    <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <span>ScrubMark — Frame-Accurate Video Review</span>
+      <div class="flex items-center gap-4 text-neutral-400">
+        <button onclick="copyDemoPageUrl()" class="hover:text-purple-400 transition-colors cursor-pointer">Copy Shareable Link</button>
+        <a href="index.html" class="hover:text-white transition-colors">Main Workspace</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let demoStep = 1;
+    let demoTimestamp = 15;
+    let demoComments = [
+      { id: 'c1', timestamp: 15, author: 'Alex (Director)', text: 'Trim this opening shot by 12 frames to tighten pacing.' },
+      { id: 'c2', timestamp: 42, author: 'Maya (Colorist)', text: 'Skin tones are slightly magenta here; adjust saturation.' },
+      { id: 'c3', timestamp: 78, author: 'Sarah (Client)', text: 'The title card looks great, can we hold it for 1 more second?' }
+    ];
+
+    function formatTime(seconds) {
+      const s = Math.max(0, Math.floor(seconds || 0));
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${m}:${rem.toString().padStart(2, '0')}`;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      const fullUrl = window.location.href.split('#')[0];
+      const disp = document.getElementById('demoFullUrlDisplay');
+      if (disp) disp.innerText = fullUrl;
+
+      const shareInput = document.getElementById('demoShareLinkInput');
+      if (shareInput) shareInput.value = window.location.origin + '/?v=sample-cut-demo';
+
+      setDemoStep(1);
+      renderDemoComments();
+    });
+
+    function setDemoStep(stepNum) {
+      demoStep = stepNum;
+      for (let i = 1; i <= 5; i++) {
+        const stepEl = document.getElementById('demoStep' + i);
+        if (stepEl) {
+          if (i === stepNum) stepEl.classList.remove('hidden');
+          else stepEl.classList.add('hidden');
+        }
+        const tabEl = document.getElementById('stepTab' + i);
+        if (tabEl) {
+          if (i === stepNum) {
+            tabEl.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-600 text-white cursor-pointer';
+          } else if (i < stepNum) {
+            tabEl.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-950/40 text-purple-300 border border-purple-900/40 cursor-pointer';
+          } else {
+            tabEl.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800 cursor-pointer';
+          }
+        }
+      }
+      const counter = document.getElementById('stepCounter');
+      if (counter) counter.innerText = `Step ${stepNum} of 5`;
+      lucide.createIcons();
+    }
+
+    function copyDemoPageUrl() {
+      const url = window.location.href.split('#')[0];
+      navigator.clipboard.writeText(url).then(() => {
+        const btnText = document.getElementById('demoCopyBtnText');
+        const btn = document.getElementById('demoCopyBtn');
+        if (btnText && btn) {
+          btnText.innerText = 'Link Copied!';
+          btn.classList.add('bg-purple-600', 'text-white');
+          setTimeout(() => {
+            btnText.innerText = 'Copy Page Link';
+            btn.classList.remove('bg-purple-600', 'text-white');
+          }, 2500);
+        }
+      });
+    }
+
+    function copySampleVideoLink() {
+      const sample = 'https://www.youtube.com/watch?v=3iRUwVzRDZQ&t';
+      navigator.clipboard.writeText(sample).then(() => {
+        const btnText = document.getElementById('demoCopySampleBtnText');
+        if (btnText) {
+          btnText.innerText = 'Copied!';
+          setTimeout(() => { btnText.innerText = 'Copy link'; }, 2000);
+        }
+      });
+    }
+
+    function copyDemoShareLink() {
+      const shareInput = document.getElementById('demoShareLinkInput');
+      if (shareInput) {
+        navigator.clipboard.writeText(shareInput.value).then(() => {
+          const btnText = document.getElementById('demoShareLinkBtnText');
+          if (btnText) {
+            btnText.innerText = 'Copied!';
+            setTimeout(() => { btnText.innerText = 'Copy'; }, 2000);
+          }
+        });
+      }
+    }
+
+    function seekDemoTime(sec) {
+      demoTimestamp = sec;
+      const badge = document.getElementById('demoLiveTimeBadge');
+      if (badge) badge.innerText = formatTime(sec);
+      const formTime = document.getElementById('demoFormTimestamp');
+      if (formTime) formTime.innerText = formatTime(sec);
+
+      document.querySelectorAll('.demo-seek-btn').forEach(btn => {
+        if (parseInt(btn.getAttribute('data-sec'), 10) === sec) {
+          btn.className = 'demo-seek-btn px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer bg-purple-600 text-white font-semibold shadow-sm';
+        } else {
+          btn.className = 'demo-seek-btn px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer bg-neutral-800 text-neutral-300 hover:text-white';
+        }
+      });
+
+      renderDemoComments();
+    }
+
+    function renderDemoComments() {
+      const container = document.getElementById('demoNotesList');
+      if (!container) return;
+      container.innerHTML = '';
+      demoComments.forEach(c => {
+        const isActive = Math.abs(c.timestamp - demoTimestamp) < 5;
+        const div = document.createElement('div');
+        div.className = `p-3 rounded-lg border text-xs cursor-pointer transition-colors ${
+          isActive 
+            ? 'bg-purple-950/30 border-purple-500/60 text-white' 
+            : 'bg-neutral-950/60 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+        }`;
+        div.onclick = () => seekDemoTime(c.timestamp);
+        div.innerHTML = `
+          <div class="flex items-center justify-between text-[11px] mb-1">
+            <span class="font-mono font-semibold text-purple-300">${formatTime(c.timestamp)}</span>
+            <span class="text-neutral-500">${c.author}</span>
+          </div>
+          <p class="text-neutral-200 leading-relaxed">${c.text}</p>
+        `;
+        container.appendChild(div);
+      });
+      const countEl = document.getElementById('demoNotesCount');
+      if (countEl) countEl.innerText = `Synced Notes (${demoComments.length})`;
+    }
+
+    function handleDemoAddComment(e) {
+      e.preventDefault();
+      const input = document.getElementById('demoCommentText');
+      if (!input || !input.value.trim()) return;
+
+      const newC = {
+        id: 'c_' + Date.now(),
+        timestamp: demoTimestamp,
+        author: 'You (Tester)',
+        text: input.value.trim()
+      };
+      demoComments.push(newC);
+      demoComments.sort((a, b) => a.timestamp - b.timestamp);
+      input.value = '';
+      renderDemoComments();
+    }
+
+    async function handleRaffleSubmit(e) {
+      e.preventDefault();
+      const errEl = document.getElementById('raffleError');
+      errEl.classList.add('hidden');
+
+      const name = document.getElementById('raffleName').value.trim();
+      const email = document.getElementById('raffleEmail').value.trim();
+
+      if (!name || !email) {
+        errEl.innerText = 'Please enter both name and email.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      const btn = document.getElementById('raffleSubmitBtn');
+      const btnText = document.getElementById('raffleSubmitBtnText');
+      btn.disabled = true;
+      btnText.innerText = 'Submitting...';
+
+      try {
+        const res = await fetch('api.php?action=raffle_entry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Submission failed');
+
+        document.getElementById('raffleTicketDisplay').innerText = data.entry?.ticket_number || 'SCRUB-3918';
+        document.getElementById('raffleEmailDisplay').innerText = email;
+        document.getElementById('raffleFormBox').classList.add('hidden');
+        document.getElementById('raffleSuccessBox').classList.remove('hidden');
+      } catch (err) {
+        errEl.innerText = err.message || 'Something went wrong. Please try again.';
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btnText.innerText = 'Submit Raffle Entry';
+      }
+    }
+
+    function restartDemo() {
+      document.getElementById('raffleSuccessBox').classList.add('hidden');
+      document.getElementById('raffleFormBox').classList.remove('hidden');
+      setDemoStep(1);
+    }
+  </script>
+</body>
+</html>

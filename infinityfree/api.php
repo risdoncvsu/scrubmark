@@ -27,6 +27,15 @@ try {
 try {
     $db->exec("ALTER TABLE videos ADD COLUMN source_type VARCHAR(32) DEFAULT 'youtube'");
 } catch (Exception $e) {}
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS raffle_entries (
+        id VARCHAR(64) PRIMARY KEY,
+        ticket_number VARCHAR(32) NOT NULL,
+        name VARCHAR(191) NOT NULL,
+        email VARCHAR(191) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+} catch (Exception $e) {}
 
 switch ($action) {
     // -------------------------------------------------------------
@@ -364,6 +373,43 @@ switch ($action) {
         $update->execute([$commentId]);
 
         jsonResponse(['success' => true]);
+        break;
+
+    // -------------------------------------------------------------
+    // RESEARCH RAFFLE ENTRY (NAME AND EMAIL ONLY)
+    // -------------------------------------------------------------
+    case 'raffle_entry':
+        if ($method !== 'POST') jsonResponse(['error' => 'Method not allowed'], 405);
+        $name = trim($body['name'] ?? '');
+        $email = strtolower(trim($body['email'] ?? ''));
+
+        if (empty($name) || empty($email)) {
+            jsonResponse(['error' => 'Name and email are required for the raffle entry.'], 400);
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            jsonResponse(['error' => 'Please enter a valid email address.'], 400);
+        }
+
+        $id = bin2hex(random_bytes(16));
+        $ticketNumber = 'SCRUB-' . rand(1000, 9999);
+
+        $stmt = $db->prepare('INSERT INTO raffle_entries (id, ticket_number, name, email) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$id, $ticketNumber, $name, $email]);
+
+        jsonResponse([
+            'success' => true,
+            'entry' => [
+                'id' => $id,
+                'ticket_number' => $ticketNumber,
+                'name' => $name,
+                'email' => $email
+            ]
+        ], 201);
+        break;
+
+    case 'raffle_entries':
+        $stmt = $db->query('SELECT * FROM raffle_entries ORDER BY created_at DESC');
+        jsonResponse($stmt->fetchAll());
         break;
 
     // -------------------------------------------------------------

@@ -8,6 +8,11 @@ AddDefaultCharset UTF-8
 AddType text/javascript .js
 AddType text/css .css
 
+# Rewrite non-file/non-directory requests to index.html (supports /demo, /tour, etc.)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+
 # Prevent directory browsing
 Options -Indexes
 
