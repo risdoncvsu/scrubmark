@@ -11,6 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- YouTube IFrame Player API for real functional playback & seeking -->
+  <script src="https://www.youtube.com/iframe_api"></script>
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
@@ -205,88 +207,184 @@
         </div>
       </div>
 
-      <!-- STEP 4: Live Interactive Player Demo (Centered & Eye-Pleasing) -->
-      <div id="demoStep4" class="hidden space-y-7 animate-in fade-in duration-200 w-full max-w-3xl mx-auto flex flex-col items-center">
-        <div class="text-center space-y-2 max-w-xl mx-auto">
-          <span class="inline-block text-xs font-semibold tracking-widest text-purple-400 uppercase bg-purple-950/70 border border-purple-800/50 px-3.5 py-1 rounded-full shadow-sm">
-            Step 4: Interactive Demo
-          </span>
-          <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Timestamping & Client Sharing Demo</h1>
-          <p class="text-xs sm:text-sm text-neutral-400 leading-relaxed">
-            Test the timeline controls: click timestamp badges to jump to exact frames, add a test comment, or copy the client review share link.
-          </p>
+      <!-- STEP 4: Live Interactive Demo Using THE ACTUAL MAIN WEBSITE REVIEW LAYOUT -->
+      <div id="demoStep4" class="hidden w-full flex-1 flex flex-col space-y-3 animate-in fade-in duration-200 min-h-0">
+        <!-- Top Bar of Review Room inside Step 4 -->
+        <div class="bg-neutral-900/90 border border-neutral-800 rounded-xl px-4 py-2.5 flex items-center justify-between shrink-0 shadow-md">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-950/60 border border-purple-800/60 px-2 py-0.5 rounded">
+              ScrubMark
+            </span>
+            <h1 class="font-semibold text-white text-sm sm:text-base truncate max-w-xs sm:max-w-md">
+              Cyberpunk City Edit (Sample Cut)
+            </h1>
+          </div>
+
+          <div class="flex items-center gap-2 sm:gap-3">
+            <button type="button" onclick="openDemoShareModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-medium transition-colors cursor-pointer border border-neutral-700/60">
+              <i data-lucide="share-2" class="w-3.5 h-3.5 text-purple-400"></i>
+              <span>Share</span>
+            </button>
+
+            <div class="hidden xs:flex items-center gap-1.5 text-xs text-neutral-400 bg-neutral-950 px-2.5 py-1 rounded-lg border border-neutral-800">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
+              <span class="text-neutral-200 font-medium">Tester</span>
+              <span class="text-[10px] text-purple-400 uppercase tracking-wider">Client Reviewer</span>
+            </div>
+
+            <button type="button" onclick="setDemoStep(5)" class="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 shadow-sm">
+              <span>Finish & Raffle</span>
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
         </div>
 
-        <!-- Centered Video Player Stage -->
-        <div class="w-full space-y-4 flex flex-col items-center">
-          <div class="aspect-video w-full bg-black rounded-2xl overflow-hidden border border-neutral-800 relative shadow-2xl shadow-purple-950/30">
-            <iframe id="demoIframe" src="https://www.youtube-nocookie.com/embed/3iRUwVzRDZQ?autoplay=0&controls=1&rel=0" title="Sample Research Video" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
-            <div class="absolute top-3 left-3 pointer-events-none">
-              <span id="demoLiveTimeBadge" class="px-2.5 py-1 rounded-lg bg-black/85 text-purple-300 font-mono text-xs border border-purple-500/30 shadow-sm backdrop-blur-xs">0:15</span>
+        <!-- Two-Panel Review Layout (Matches VideoReview.tsx) -->
+        <div class="flex-1 flex flex-col md:flex-row min-h-[520px] md:min-h-[560px] border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl bg-neutral-900">
+          
+          <!-- Left: Full Player Stage & Controls -->
+          <div class="w-full md:flex-1 flex flex-col shrink-0 md:shrink relative bg-black">
+            <div class="w-full aspect-video md:aspect-auto md:flex-1 relative bg-black flex items-center justify-center">
+              <div id="ytPlayerContainerIndex" class="absolute inset-0 w-full h-full"></div>
+              <div class="absolute top-3 left-3 pointer-events-none z-10">
+                <span id="demoLiveTimeBadge" class="px-2.5 py-1 rounded-lg bg-black/85 text-purple-300 font-mono text-xs border border-purple-500/30 shadow-sm backdrop-blur-xs">0:15</span>
+              </div>
+            </div>
+
+            <!-- Reviewer Control Bar -->
+            <div class="h-11 sm:h-12 bg-neutral-950 border-t border-neutral-800 px-3 sm:px-4 flex items-center justify-between shrink-0 text-xs text-neutral-300">
+              <div class="flex items-center gap-1.5 sm:gap-2">
+                <button type="button" onclick="toggleDemoPlayPause()" title="Play / Pause" class="px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium">
+                  <i data-lucide="play" id="demoPlayIcon" class="w-3.5 h-3.5 text-purple-400"></i>
+                  <span id="demoPlayText">Play</span>
+                </button>
+
+                <button type="button" onclick="seekDemoRelative(-5)" title="Rewind 5s" class="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono text-xs">
+                  <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                  <span>-5s</span>
+                </button>
+
+                <button type="button" onclick="seekDemoRelative(5)" title="Forward 5s" class="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono text-xs">
+                  <i data-lucide="rotate-cw" class="w-3 h-3"></i>
+                  <span>+5s</span>
+                </button>
+
+                <!-- Current Time Badge -->
+                <div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-950/70 border border-purple-800/40 text-purple-300 font-mono text-xs ml-1 font-medium">
+                  <span id="demoControlTime">0:15</span>
+                </div>
+              </div>
+
+              <div class="hidden md:flex items-center gap-3 text-neutral-500 text-[11px]">
+                <span class="flex items-center gap-1">
+                  <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">Space</kbd> Play/Pause
+                </span>
+                <span class="flex items-center gap-1">
+                  <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">←</kbd>
+                  <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">→</kbd> Scrub 5s
+                </span>
+              </div>
             </div>
           </div>
 
-          <!-- Centered Seek Pills -->
-          <div class="w-full p-4 rounded-2xl bg-neutral-900/80 border border-neutral-800 space-y-2 text-center">
-            <div class="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Seek Timeline By Timestamp:</div>
-            <div class="flex flex-wrap items-center justify-center gap-2">
-              <button type="button" onclick="seekDemoTime(15)" class="demo-seek-btn px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all cursor-pointer bg-purple-600 text-white font-semibold shadow-md shadow-purple-600/30 scale-105" data-sec="15">0:15</button>
-              <button type="button" onclick="seekDemoTime(30)" class="demo-seek-btn px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all cursor-pointer bg-neutral-800 text-neutral-300 hover:text-white" data-sec="30">0:30</button>
-              <button type="button" onclick="seekDemoTime(42)" class="demo-seek-btn px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all cursor-pointer bg-neutral-800 text-neutral-300 hover:text-white" data-sec="42">0:42</button>
-              <button type="button" onclick="seekDemoTime(60)" class="demo-seek-btn px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all cursor-pointer bg-neutral-800 text-neutral-300 hover:text-white" data-sec="60">1:00</button>
-              <button type="button" onclick="seekDemoTime(78)" class="demo-seek-btn px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all cursor-pointer bg-neutral-800 text-neutral-300 hover:text-white" data-sec="78">1:18</button>
-            </div>
-          </div>
-
-          <!-- Centered Share Link Card -->
-          <div class="w-full p-4 rounded-2xl bg-neutral-900/80 border border-neutral-800 space-y-2.5 shadow-md">
-            <div class="flex items-center justify-between text-xs px-1">
-              <span class="font-semibold text-white flex items-center gap-1.5">
-                <i data-lucide="share-2" class="w-3.5 h-3.5 text-purple-400"></i>
-                Client Review Share Link
-              </span>
-              <span class="text-[10px] text-purple-400 font-mono uppercase bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-800/40">No Login Required</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="text" readonly id="demoShareLinkInput" class="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-neutral-300 font-mono select-all outline-none">
-              <button type="button" onclick="copyDemoShareLink()" id="demoShareLinkBtn" class="px-4 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer bg-neutral-800 hover:bg-neutral-700 text-neutral-200 shrink-0">
-                <span id="demoShareLinkBtnText">Copy</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Centered Synced Notes Feed -->
-          <div class="w-full rounded-2xl border border-neutral-800 bg-neutral-900/80 flex flex-col overflow-hidden shadow-xl">
-            <div class="p-4 border-b border-neutral-800 flex items-center justify-between">
-              <span class="text-xs font-semibold text-white flex items-center gap-1.5">
+          <!-- Right: Review Notes Sidebar -->
+          <div class="w-full md:w-96 bg-neutral-900 md:border-l border-neutral-800 flex flex-col flex-1 md:flex-initial min-h-0 overflow-hidden">
+            
+            <!-- Sidebar Header -->
+            <div class="px-4 py-2.5 sm:py-3 border-b border-neutral-800 bg-neutral-950 flex items-center justify-between shrink-0">
+              <h2 class="font-semibold flex items-center gap-2 text-xs sm:text-sm text-white">
                 <i data-lucide="message-square" class="w-3.5 h-3.5 text-purple-400"></i>
-                <span id="demoNotesCount">Synced Notes (3)</span>
+                Review Notes
+              </h2>
+              <span id="demoNotesCountBadge" class="text-xs font-mono text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800/40">
+                3 Active
               </span>
-              <span class="text-[11px] text-purple-400 font-mono">Real-time Feed</span>
             </div>
 
-            <div id="demoNotesList" class="p-4 space-y-2.5 overflow-y-auto max-h-[260px]"></div>
+            <!-- Tutorial Prompt Banner: Prompts user to leave a comment! -->
+            <div class="p-3 bg-purple-950/40 border-b border-purple-500/30 flex items-start gap-2.5 text-xs text-purple-200">
+              <i data-lucide="sparkles" class="w-4 h-4 text-purple-400 shrink-0 mt-0.5"></i>
+              <div class="space-y-0.5 text-left">
+                <p class="font-semibold text-purple-300">Tutorial Task:</p>
+                <p class="text-[11px] text-purple-200/90 leading-relaxed">
+                  Pause the video at any frame and type a note below to test real-time feedback submission!
+                </p>
+              </div>
+            </div>
 
-            <form onsubmit="handleDemoAddComment(event)" class="p-3.5 border-t border-neutral-800 bg-neutral-950/60 space-y-2">
-              <div class="text-[11px] text-neutral-400 flex items-center justify-between px-1">
-                <span>Add note at timestamp:</span>
-                <span id="demoFormTimestamp" class="font-mono text-purple-300 font-medium">0:15</span>
+            <!-- Active Notes List -->
+            <div class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
+              <div>
+                <h3 class="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-2.5 px-1">
+                  Active Notes
+                </h3>
+                <div id="demoActiveNotesList" class="space-y-2"></div>
               </div>
-              <div class="flex items-center gap-2">
-                <input type="text" id="demoCommentText" placeholder="Type feedback note..." required class="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-purple-500 transition-colors">
-                <button type="submit" class="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition-colors cursor-pointer shrink-0">Post Note</button>
+
+              <!-- Resolved Notes List -->
+              <div id="demoResolvedContainer" class="hidden">
+                <h3 class="text-[11px] font-semibold text-neutral-600 uppercase tracking-wider mb-2.5 px-1 flex items-center gap-1.5">
+                  <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-400"></i>
+                  Resolved
+                </h3>
+                <div id="demoResolvedNotesList" class="space-y-2"></div>
               </div>
-            </form>
+            </div>
+
+            <!-- Comment Composer at Bottom of Sidebar -->
+            <div class="p-3 sm:p-4 border-t border-neutral-800 bg-neutral-950 shrink-0">
+              <form onsubmit="handleDemoPostComment(event)" class="flex flex-col gap-2.5">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-medium text-neutral-500">At:</span>
+                    <div class="px-1.5 py-0.5 rounded bg-purple-950/80 text-purple-300 text-xs font-mono font-medium border border-purple-800/50">
+                      <span id="demoComposerTimestamp">0:15</span>
+                    </div>
+                  </div>
+                  <span class="text-[11px] text-neutral-500">
+                    As: <strong class="text-neutral-300 font-medium">You (Tester)</strong>
+                  </span>
+                </div>
+
+                <textarea
+                  id="demoComposerInput"
+                  placeholder="Leave a feedback note or question..."
+                  rows="2"
+                  required
+                  class="w-full bg-neutral-900 border border-neutral-800 focus:border-purple-500 rounded-lg p-2.5 text-xs sm:text-sm text-white placeholder-neutral-500 resize-none outline-none transition-colors"
+                ></textarea>
+
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[10px] text-neutral-500 font-mono">Press Enter to send</span>
+                  <button
+                    type="submit"
+                    class="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-medium text-xs transition-colors cursor-pointer shadow-sm shadow-purple-600/25"
+                  >
+                    Post Note
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
 
-        <div class="pt-4 flex items-center justify-center gap-3 w-full">
-          <button type="button" onclick="setDemoStep(3)" class="px-5 py-2.5 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-900 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5">
+        <!-- Bottom Step 4 Navigation Bar -->
+        <div class="flex items-center justify-between pt-2">
+          <button
+            type="button"
+            onclick="setDemoStep(3)"
+            class="px-4 py-2 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-900 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+          >
             <i data-lucide="chevron-left" class="w-4 h-4"></i>
-            <span>Back</span>
+            <span>Back to Step 3</span>
           </button>
-          <button type="button" onclick="setDemoStep(5)" class="px-7 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm shadow-purple-600/30">
-            <span>Next: Enter Raffle</span>
+
+          <button
+            type="button"
+            onclick="setDemoStep(5)"
+            class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs sm:text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm shadow-purple-600/30"
+          >
+            <span>Proceed to Raffle Entry</span>
             <i data-lucide="chevron-right" class="w-4 h-4"></i>
           </button>
         </div>
@@ -410,6 +508,112 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- POPUP 2: COMMENT SUBMITTED & APPROVAL NOTICE (Requested by user) -->
+    <div id="demoApprovalModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+      <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-purple-950 border border-purple-800/80 text-purple-400 flex items-center justify-center mx-auto shadow-inner">
+          <i data-lucide="check-circle-2" class="w-7 h-7"></i>
+        </div>
+
+        <div class="space-y-2">
+          <h3 class="text-xl font-bold text-white tracking-tight">Comment Submitted!</h3>
+          <p class="text-xs sm:text-sm text-neutral-300 leading-relaxed">
+            Your feedback note at <strong id="approvalCommentTime" class="text-purple-300 font-mono">0:15</strong> has been recorded.
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-purple-950/60 border border-purple-500/40 text-purple-200 text-xs text-left space-y-1.5">
+          <div class="font-semibold flex items-center gap-1.5 text-purple-300">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Approval Workflow Notice</span>
+          </div>
+          <p class="text-[11px] text-purple-200/90 leading-relaxed">
+            In the main website, this comment you just left can be <strong>reviewed and approved</strong> by the project owner once the revision is complete!
+          </p>
+        </div>
+
+        <div class="p-3 rounded-lg bg-neutral-950 border border-neutral-800 text-left space-y-1">
+          <div class="flex items-center justify-between text-[11px]">
+            <span id="approvalPreviewTime" class="font-mono text-purple-300 font-semibold">0:15</span>
+            <span class="text-neutral-500">You (Tester)</span>
+          </div>
+          <p id="approvalPreviewText" class="text-xs text-neutral-300 truncate">"..."</p>
+        </div>
+
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
+          <button
+            type="button"
+            onclick="closeApprovalModalAndGoToRaffle()"
+            class="w-full sm:flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition-colors cursor-pointer shadow-md shadow-purple-600/30 flex items-center justify-center gap-1.5"
+          >
+            <span>Next: Enter Raffle</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </button>
+
+          <button
+            type="button"
+            onclick="closeApprovalModal()"
+            class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 text-xs font-medium transition-colors cursor-pointer"
+          >
+            Keep Testing Player
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP 3: SHARE MODAL -->
+    <div id="demoShareModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center">
+              <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+            </div>
+            <h3 class="text-sm font-bold text-white">Share Review Room</h3>
+          </div>
+          <button onclick="closeDemoShareModal()" class="text-neutral-400 hover:text-white transition-colors cursor-pointer p-1">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <p class="text-xs text-neutral-400">
+          Anyone with this link can review the video cut, scrub frames, and leave feedback notes without creating an account.
+        </p>
+
+        <div class="space-y-1.5">
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+            Client Review Link
+          </label>
+          <div class="flex items-center gap-2">
+            <input
+              type="text"
+              readonly
+              id="modalShareInputIndex"
+              class="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-neutral-300 font-mono select-all outline-none"
+            />
+            <button
+              type="button"
+              onclick="copyDemoShareLink()"
+              id="demoShareLinkBtnIndex"
+              class="px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 bg-neutral-800 hover:bg-neutral-700 text-neutral-200"
+            >
+              <span id="demoShareLinkBtnTextIndex">Copy</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <button
+            type="button"
+            onclick="closeDemoShareModal()"
+            class="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-medium transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
 
@@ -859,6 +1063,99 @@
       }
     }
 
+    let demoYtPlayer = null;
+    let demoIsPlaying = false;
+
+    // Called automatically by YouTube IFrame API
+    function onYouTubeIframeAPIReady() {
+      // Setup demo player when demo view is initialized or shown
+      initDemoYtPlayer();
+    }
+
+    function initDemoYtPlayer() {
+      const container = document.getElementById('ytPlayerContainerIndex');
+      if (!container || demoYtPlayer) return;
+      try {
+        demoYtPlayer = new YT.Player('ytPlayerContainerIndex', {
+          videoId: '3iRUwVzRDZQ',
+          playerVars: {
+            controls: 1,
+            rel: 0,
+            modestbranding: 1,
+            playsinline: 1
+          },
+          events: {
+            'onStateChange': onDemoPlayerStateChange
+          }
+        });
+      } catch (e) {
+        console.warn('YouTube API not ready yet, will retry', e);
+      }
+    }
+
+    function onDemoPlayerStateChange(event) {
+      demoIsPlaying = (event.data === YT.PlayerState.PLAYING);
+      updateDemoPlayButtonUI();
+    }
+
+    function updateDemoPlayButtonUI() {
+      const icon = document.getElementById('demoPlayIcon');
+      const text = document.getElementById('demoPlayText');
+      if (text) text.innerText = demoIsPlaying ? 'Pause' : 'Play';
+      if (icon) {
+        icon.setAttribute('data-lucide', demoIsPlaying ? 'pause' : 'play');
+        lucide.createIcons();
+      }
+    }
+
+    function toggleDemoPlayPause() {
+      if (!demoYtPlayer || typeof demoYtPlayer.getPlayerState !== 'function') return;
+      if (demoIsPlaying) {
+        demoYtPlayer.pauseVideo();
+      } else {
+        demoYtPlayer.playVideo();
+      }
+    }
+
+    function seekDemoRelative(delta) {
+      if (!demoYtPlayer || typeof demoYtPlayer.getCurrentTime !== 'function') return;
+      const cur = demoYtPlayer.getCurrentTime() || 0;
+      const nextTime = Math.max(0, cur + delta);
+      demoYtPlayer.seekTo(nextTime, true);
+      demoTimestamp = nextTime;
+      updateDemoTimeDisplays();
+    }
+
+    function jumpToDemoTime(sec) {
+      demoTimestamp = sec;
+      updateDemoTimeDisplays();
+      if (demoYtPlayer && typeof demoYtPlayer.seekTo === 'function') {
+        demoYtPlayer.seekTo(sec, true);
+        demoYtPlayer.playVideo();
+      }
+    }
+
+    function updateDemoTimeDisplays() {
+      const formatted = formatTime(demoTimestamp);
+      const badge = document.getElementById('demoLiveTimeBadge');
+      const ctrl = document.getElementById('demoControlTime');
+      const comp = document.getElementById('demoComposerTimestamp');
+      if (badge) badge.innerText = formatted;
+      if (ctrl) ctrl.innerText = formatted;
+      if (comp) comp.innerText = formatted;
+    }
+
+    // Interval to poll real playback time
+    setInterval(() => {
+      if (demoStep === 4 && demoYtPlayer && typeof demoYtPlayer.getCurrentTime === 'function') {
+        const cur = demoYtPlayer.getCurrentTime();
+        if (typeof cur === 'number' && !isNaN(cur)) {
+          demoTimestamp = cur;
+          updateDemoTimeDisplays();
+        }
+      }
+    }, 200);
+
     function setDemoStep(stepNum) {
       demoStep = stepNum;
       for (let i = 1; i <= 5; i++) {
@@ -870,16 +1167,23 @@
         const tabEl = document.getElementById('stepTab' + i);
         if (tabEl) {
           if (i === stepNum) {
-            tabEl.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-600 text-white cursor-pointer';
+            tabEl.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-purple-600 text-white cursor-pointer shadow-sm shadow-purple-600/30';
           } else if (i < stepNum) {
-            tabEl.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-950/40 text-purple-300 border border-purple-900/40 cursor-pointer';
+            tabEl.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-purple-950/50 text-purple-300 border border-purple-800/50 cursor-pointer';
           } else {
-            tabEl.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800 cursor-pointer';
+            tabEl.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800/70 cursor-pointer';
           }
         }
       }
+
       const counter = document.getElementById('stepCounter');
       if (counter) counter.innerText = `Step ${stepNum} of 5`;
+
+      if (stepNum === 4) {
+        initDemoYtPlayer();
+      }
+
+      renderDemoComments();
       lucide.createIcons();
     }
 
@@ -937,14 +1241,29 @@
         if (btnText) btnText.innerText = 'Add Video & Launch Review';
         closeDemoAddVideoModal();
         setDemoStep(4);
-      }, 700);
+      }, 600);
+    }
+
+    function openDemoShareModal() {
+      const modal = document.getElementById('demoShareModal');
+      const input = document.getElementById('modalShareInputIndex');
+      if (input) input.value = window.location.origin + '/?v=sample-cut-demo';
+      if (modal) {
+        modal.classList.remove('hidden');
+        lucide.createIcons();
+      }
+    }
+
+    function closeDemoShareModal() {
+      const modal = document.getElementById('demoShareModal');
+      if (modal) modal.classList.add('hidden');
     }
 
     function copyDemoShareLink() {
-      const shareInput = document.getElementById('demoShareLinkInput');
+      const shareInput = document.getElementById('modalShareInputIndex');
       if (shareInput) {
         navigator.clipboard.writeText(shareInput.value).then(() => {
-          const btnText = document.getElementById('demoShareLinkBtnText');
+          const btnText = document.getElementById('demoShareLinkBtnTextIndex');
           if (btnText) {
             btnText.innerText = 'Copied!';
             setTimeout(() => { btnText.innerText = 'Copy'; }, 2000);
@@ -953,65 +1272,119 @@
       }
     }
 
-    function seekDemoTime(sec) {
-      demoTimestamp = sec;
-      const badge = document.getElementById('demoLiveTimeBadge');
-      if (badge) badge.innerText = formatTime(sec);
-      const formTime = document.getElementById('demoFormTimestamp');
-      if (formTime) formTime.innerText = formatTime(sec);
+    function renderDemoComments() {
+      const activeList = document.getElementById('demoActiveNotesList');
+      const resolvedList = document.getElementById('demoResolvedNotesList');
+      const resolvedContainer = document.getElementById('demoResolvedContainer');
+      const countBadge = document.getElementById('demoNotesCountBadge');
 
-      document.querySelectorAll('.demo-seek-btn').forEach(btn => {
-        if (parseInt(btn.getAttribute('data-sec'), 10) === sec) {
-          btn.className = 'demo-seek-btn px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer bg-purple-600 text-white font-semibold shadow-sm';
+      if (!activeList) return;
+      activeList.innerHTML = '';
+      if (resolvedList) resolvedList.innerHTML = '';
+
+      const active = demoComments.filter(c => !c.is_resolved);
+      const resolved = demoComments.filter(c => c.is_resolved);
+
+      if (countBadge) countBadge.innerText = `${active.length} Active`;
+
+      if (active.length === 0) {
+        activeList.innerHTML = '<p class="text-xs sm:text-sm text-neutral-500 italic px-1">No active notes.</p>';
+      } else {
+        active.forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'group bg-neutral-800/60 hover:bg-neutral-800 p-3 rounded-xl border border-neutral-700/60 hover:border-purple-500/50 cursor-pointer transition-colors';
+          div.onclick = () => jumpToDemoTime(c.timestamp);
+          div.innerHTML = `
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 text-xs font-mono font-semibold border border-purple-800/50">${formatTime(c.timestamp)}</span>
+                <span class="text-xs font-medium text-neutral-300">${c.author}</span>
+              </div>
+              <button type="button" onclick="event.stopPropagation(); resolveDemoComment('${c.id}')" class="p-1 -m-1 text-neutral-500 hover:text-emerald-400 transition-colors cursor-pointer" title="Resolve Note">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <p class="text-xs sm:text-sm text-neutral-200 text-left">${c.text}</p>
+          `;
+          activeList.appendChild(div);
+        });
+      }
+
+      if (resolvedContainer && resolvedList) {
+        if (resolved.length > 0) {
+          resolvedContainer.classList.remove('hidden');
+          resolved.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'bg-neutral-900 p-3 rounded-lg border border-neutral-800 cursor-pointer opacity-60 hover:opacity-85 transition-opacity';
+            div.onclick = () => jumpToDemoTime(c.timestamp);
+            div.innerHTML = `
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 text-xs font-mono font-medium">${formatTime(c.timestamp)}</span>
+                <span class="text-xs font-medium text-neutral-500 line-through">${c.author}</span>
+              </div>
+              <p class="text-xs sm:text-sm text-neutral-400 line-through text-left">${c.text}</p>
+            `;
+            resolvedList.appendChild(div);
+          });
         } else {
-          btn.className = 'demo-seek-btn px-3 py-1 rounded-md text-xs font-mono transition-colors cursor-pointer bg-neutral-800 text-neutral-300 hover:text-white';
+          resolvedContainer.classList.add('hidden');
         }
-      });
+      }
 
+      lucide.createIcons();
+    }
+
+    function resolveDemoComment(id) {
+      demoComments = demoComments.map(c => c.id === id ? { ...c, is_resolved: !c.is_resolved } : c);
       renderDemoComments();
     }
 
-    function renderDemoComments() {
-      const container = document.getElementById('demoNotesList');
-      if (!container) return;
-      container.innerHTML = '';
-      demoComments.forEach(c => {
-        const isActive = Math.abs(c.timestamp - demoTimestamp) < 5;
-        const div = document.createElement('div');
-        div.className = `p-3 rounded-lg border text-xs cursor-pointer transition-colors ${
-          isActive 
-            ? 'bg-purple-950/30 border-purple-500/60 text-white' 
-            : 'bg-neutral-950/60 border-neutral-800 hover:border-neutral-700 text-neutral-300'
-        }`;
-        div.onclick = () => seekDemoTime(c.timestamp);
-        div.innerHTML = `
-          <div class="flex items-center justify-between text-[11px] mb-1">
-            <span class="font-mono font-semibold text-purple-300">${formatTime(c.timestamp)}</span>
-            <span class="text-neutral-500">${c.author}</span>
-          </div>
-          <p class="text-neutral-200 leading-relaxed">${c.text}</p>
-        `;
-        container.appendChild(div);
-      });
-      const countEl = document.getElementById('demoNotesCount');
-      if (countEl) countEl.innerText = `Synced Notes (${demoComments.length})`;
-    }
-
-    function handleDemoAddComment(e) {
+    // Handles user posting a comment in Step 4
+    function handleDemoPostComment(e) {
       e.preventDefault();
-      const input = document.getElementById('demoCommentText');
+      const input = document.getElementById('demoComposerInput');
       if (!input || !input.value.trim()) return;
 
-      const newC = {
+      const text = input.value.trim();
+      const time = Math.floor(demoTimestamp);
+
+      const newComment = {
         id: 'c_' + Date.now(),
-        timestamp: demoTimestamp,
+        timestamp: time,
         author: 'You (Tester)',
-        text: input.value.trim()
+        text: text,
+        is_resolved: false
       };
-      demoComments.push(newC);
+
+      demoComments.push(newComment);
       demoComments.sort((a, b) => a.timestamp - b.timestamp);
       input.value = '';
       renderDemoComments();
+
+      // Show the requested approval popup
+      const modal = document.getElementById('demoApprovalModal');
+      const timeEl = document.getElementById('approvalCommentTime');
+      const prevTime = document.getElementById('approvalPreviewTime');
+      const prevText = document.getElementById('approvalPreviewText');
+
+      if (timeEl) timeEl.innerText = formatTime(time);
+      if (prevTime) prevTime.innerText = formatTime(time);
+      if (prevText) prevText.innerText = `"${text}"`;
+
+      if (modal) {
+        modal.classList.remove('hidden');
+        lucide.createIcons();
+      }
+    }
+
+    function closeApprovalModal() {
+      const modal = document.getElementById('demoApprovalModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function closeApprovalModalAndGoToRaffle() {
+      closeApprovalModal();
+      setDemoStep(5);
     }
 
     async function handleRaffleSubmit(e) {
