@@ -18,9 +18,10 @@ import {
   RotateCw, 
   CheckCircle2, 
   Edit3,
-  ExternalLink
+  ExternalLink,
+  AlertCircle
 } from 'lucide-react';
-import { formatTime } from '../utils';
+import { formatTime, extractYouTubeID } from '../utils';
 
 interface DemoPageProps {
   onExit: () => void;
@@ -60,11 +61,14 @@ export function DemoPage({
   const [raffleName, setRaffleName] = useState('');
   const [raffleEmail, setRaffleEmail] = useState('');
 
-  // Add Video Popup State
+  // Add Video Popup State (Unfilled so users experience pasting link and adding video themselves)
   const [isAddVideoModalOpen, setIsAddVideoModalOpen] = useState(false);
-  const [projectNameInput, setProjectNameInput] = useState('Cyberpunk City Edit (Sample Cut)');
-  const [videoUrlInput, setVideoUrlInput] = useState(SAMPLE_LINK);
+  const [projectNameInput, setProjectNameInput] = useState('');
+  const [videoUrlInput, setVideoUrlInput] = useState('');
+  const [addVideoError, setAddVideoError] = useState<string | null>(null);
   const [isAddingVideo, setIsAddingVideo] = useState(false);
+  const [demoProjectTitle, setDemoProjectTitle] = useState('Cyberpunk City Edit (Sample Cut)');
+  const [demoVideoId, setDemoVideoId] = useState(SAMPLE_YT_ID);
 
   // Step 4: Real functional video review state (matches VideoReview.tsx)
   const [currentTimestamp, setCurrentTimestamp] = useState(15);
@@ -219,9 +223,9 @@ export function DemoPage({
     });
   };
 
-  // Automatically triggers the Add Video popup modal when user copies the link
-  const triggerAddVideoModalWithSample = () => {
-    setVideoUrlInput(SAMPLE_LINK);
+  // Automatically opens the Add Video popup modal when user copies the link (fields kept empty so user experiences pasting link)
+  const openAddVideoModal = () => {
+    setAddVideoError(null);
     setIsAddVideoModalOpen(true);
   };
 
@@ -235,8 +239,8 @@ export function DemoPage({
       setTimeout(() => setCopiedLink(false), 3000);
     });
 
-    // Auto-fill and immediately open the "Add Video" popup before proceeding to video
-    triggerAddVideoModalWithSample();
+    // Automatically open the "Add Video" popup without pre-filled inputs
+    openAddVideoModal();
   };
 
   const handleCopyShareLink = () => {
@@ -263,18 +267,40 @@ export function DemoPage({
     });
   };
 
+  // Quick helper to paste the copied sample link directly into the modal if the user prefers 1 click
+  const handlePasteSampleLink = () => {
+    setVideoUrlInput(SAMPLE_LINK);
+    if (!projectNameInput.trim()) {
+      setProjectNameInput('Cyberpunk City Edit (Sample Cut)');
+    }
+    setAddVideoError(null);
+  };
+
   // Called when user submits the "Add Video" popup
   const handleConfirmAddVideo = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    const trimmedUrl = videoUrlInput.trim();
+    if (!trimmedUrl) {
+      setAddVideoError('Please paste a video URL first (paste the sample link you copied!).');
+      return;
+    }
+
+    const detectedId = extractYouTubeID(trimmedUrl) || '3iRUwVzRDZQ';
+    const finalTitle = projectNameInput.trim() || 'Cyberpunk City Edit (Sample Cut)';
+
     setIsAddingVideo(true);
+    setAddVideoError(null);
 
     if (onAutoAddVideo) {
       try {
-        await onAutoAddVideo(projectNameInput || 'Cyberpunk City Edit (Sample Cut)', videoUrlInput || SAMPLE_LINK);
+        await onAutoAddVideo(finalTitle, trimmedUrl);
       } catch (err) {
         console.error('Add video error:', err);
       }
     }
+
+    setDemoVideoId(detectedId);
+    setDemoProjectTitle(finalTitle);
 
     // Brief smooth ingestion transition, then advance to Step 4 (Video review demo)
     setTimeout(() => {
@@ -601,7 +627,7 @@ export function DemoPage({
                 Sample Video Link
               </h1>
               <p className="text-sm sm:text-base text-neutral-400 max-w-lg mx-auto leading-relaxed">
-                Click below to copy our test video cut. As soon as you copy the link, the <strong className="text-purple-300">Add Video popup</strong> will automatically appear so you can review details and add the cut before proceeding to the video!
+                Click below to copy our test video cut. As soon as you copy the link, the <strong className="text-purple-300">Add Video popup</strong> will automatically appear with blank fields so you can paste your link, name the project, and experience how easy it is to add videos to ScrubMark!
               </p>
             </div>
 
@@ -659,7 +685,7 @@ export function DemoPage({
 
               <button
                 type="button"
-                onClick={triggerAddVideoModalWithSample}
+                onClick={openAddVideoModal}
                 className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shadow-purple-600/25"
               >
                 <Plus size={14} />
@@ -679,7 +705,7 @@ export function DemoPage({
                   ScrubMark
                 </span>
                 <h1 className="font-semibold text-white text-sm sm:text-base truncate max-w-xs sm:max-w-md">
-                  Cyberpunk City Edit (Sample Cut)
+                  {demoProjectTitle}
                 </h1>
               </div>
 
@@ -717,7 +743,7 @@ export function DemoPage({
               <div className="w-full md:flex-1 flex flex-col shrink-0 md:shrink relative bg-black">
                 <div className="w-full aspect-video md:aspect-auto md:flex-1 relative bg-black flex items-center justify-center">
                   <YouTube
-                    videoId={SAMPLE_YT_ID}
+                    videoId={demoVideoId}
                     opts={{
                       width: '100%',
                       height: '100%',
@@ -1155,10 +1181,19 @@ export function DemoPage({
             </div>
 
             {/* Notification badge */}
-            <div className="p-3 rounded-xl bg-purple-950/60 border border-purple-500/40 flex items-center gap-2 text-xs text-purple-300">
-              <Sparkles size={14} className="text-purple-400 shrink-0" />
-              <span>Link copied! Review project cut details and click Add Video to launch review:</span>
+            <div className="p-3 rounded-xl bg-purple-950/60 border border-purple-500/40 flex items-start gap-2.5 text-xs text-purple-300">
+              <Sparkles size={15} className="text-purple-400 shrink-0 mt-0.5" />
+              <span className="leading-relaxed">
+                <strong>Link copied to clipboard!</strong> Paste your video link below and name your project to experience how easy it is to add videos to ScrubMark:
+              </span>
             </div>
+
+            {addVideoError && (
+              <div className="p-2.5 rounded-lg bg-red-950/60 border border-red-800/60 flex items-center gap-2 text-xs text-red-300 animate-in fade-in">
+                <AlertCircle size={14} className="shrink-0 text-red-400" />
+                <span>{addVideoError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleConfirmAddVideo} className="space-y-4">
               <div className="space-y-1.5">
@@ -1167,26 +1202,39 @@ export function DemoPage({
                 </label>
                 <input
                   type="text"
-                  required
                   value={projectNameInput}
                   onChange={(e) => setProjectNameInput(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3.5 py-2.5 text-xs text-white outline-none focus:border-purple-500 transition-colors"
+                  placeholder="e.g. Cyberpunk City Edit (or any project name)"
+                  className="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 outline-none transition-colors"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                  Video URL
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                    Video URL
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePasteSampleLink}
+                    className="text-[11px] text-purple-400 hover:text-purple-300 transition-colors cursor-pointer flex items-center gap-1 font-medium"
+                  >
+                    <Copy size={11} />
+                    <span>Paste Sample Link</span>
+                  </button>
+                </div>
                 <input
                   type="url"
-                  required
                   value={videoUrlInput}
-                  onChange={(e) => setVideoUrlInput(e.target.value)}
-                  className="w-full bg-neutral-950 border border-purple-500/50 rounded-lg px-3.5 py-2.5 text-xs text-purple-300 font-mono outline-none focus:border-purple-500 transition-colors"
+                  onChange={(e) => {
+                    setVideoUrlInput(e.target.value);
+                    if (addVideoError) setAddVideoError(null);
+                  }}
+                  placeholder="Paste YouTube URL here (e.g. paste your copied sample link)"
+                  className="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-xs text-purple-300 font-mono placeholder-neutral-500 outline-none transition-colors"
                 />
                 <p className="text-[11px] text-neutral-500">
-                  YouTube video cut is ready for instant frame-by-frame review.
+                  Paste the sample link you copied (or any YouTube cut) to experience frame-by-frame review.
                 </p>
               </div>
 

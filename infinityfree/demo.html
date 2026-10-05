@@ -229,7 +229,7 @@
           <span class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-950/60 border border-purple-800/60 px-2 py-0.5 rounded">
             ScrubMark
           </span>
-          <h1 class="font-semibold text-white text-sm sm:text-base truncate max-w-xs sm:max-w-md">
+          <h1 id="demoReviewProjectTitle" class="font-semibold text-white text-sm sm:text-base truncate max-w-xs sm:max-w-md">
             Cyberpunk City Edit (Sample Cut)
           </h1>
         </div>
@@ -496,21 +496,29 @@
         </button>
       </div>
 
-      <div class="p-3 rounded-xl bg-purple-950/60 border border-purple-500/40 flex items-center gap-2 text-xs text-purple-300">
-        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
-        <span>Link copied! Review project cut details and click Add Video to launch review:</span>
+      <div class="p-3 rounded-xl bg-purple-950/60 border border-purple-500/40 flex items-start gap-2.5 text-xs text-purple-300">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5"></i>
+        <span><strong>Link copied to clipboard!</strong> Paste the link below and name your project to experience how easy it is to add videos to ScrubMark:</span>
       </div>
+
+      <div id="demoAddVideoError" class="hidden p-2.5 rounded-lg bg-red-950/60 border border-red-800/60 text-red-300 text-xs"></div>
 
       <form onsubmit="handleConfirmDemoAddVideo(event)" class="space-y-4">
         <div class="space-y-1.5">
           <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400">Project Title</label>
-          <input type="text" id="demoAddVideoProjectName" required value="Cyberpunk City Edit (Sample Cut)" class="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3.5 py-2.5 text-xs text-white outline-none focus:border-purple-500 transition-colors">
+          <input type="text" id="demoAddVideoProjectName" placeholder="e.g. Cyberpunk City Edit (or any project name)" value="" class="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 outline-none transition-colors">
         </div>
 
         <div class="space-y-1.5">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400">Video URL</label>
-          <input type="url" id="demoAddVideoUrl" required value="https://www.youtube.com/watch?v=3iRUwVzRDZQ&t" class="w-full bg-neutral-950 border border-purple-500/50 rounded-lg px-3.5 py-2.5 text-xs text-purple-300 font-mono outline-none focus:border-purple-500 transition-colors">
-          <p class="text-[11px] text-neutral-500">YouTube video cut is ready for instant frame-by-frame review.</p>
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400">Video URL</label>
+            <button type="button" onclick="pasteSampleLinkIntoDemoModal()" class="text-[11px] text-purple-400 hover:text-purple-300 transition-colors cursor-pointer flex items-center gap-1 font-medium">
+              <i data-lucide="copy" class="w-3 h-3"></i>
+              <span>Paste Sample Link</span>
+            </button>
+          </div>
+          <input type="url" id="demoAddVideoUrl" placeholder="Paste YouTube link here (e.g. paste your copied sample link)" value="" class="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-xs text-purple-300 font-mono placeholder-neutral-500 outline-none transition-colors">
+          <p class="text-[11px] text-neutral-500">Paste the sample link you copied (or any YouTube cut) to test frame-by-frame review.</p>
         </div>
 
         <div class="pt-2 flex items-center justify-end gap-2.5">
@@ -824,8 +832,23 @@
       });
     }
 
+    function pasteSampleLinkIntoDemoModal() {
+      const urlInput = document.getElementById('demoAddVideoUrl');
+      const nameInput = document.getElementById('demoAddVideoProjectName');
+      const err = document.getElementById('demoAddVideoError');
+      if (urlInput) {
+        urlInput.value = SAMPLE_LINK;
+        if (nameInput && !nameInput.value.trim()) {
+          nameInput.value = 'Cyberpunk City Edit (Sample Cut)';
+        }
+      }
+      if (err) err.classList.add('hidden');
+    }
+
     function openDemoAddVideoModal() {
       const modal = document.getElementById('demoAddVideoModal');
+      const err = document.getElementById('demoAddVideoError');
+      if (err) err.classList.add('hidden');
       if (modal) {
         modal.classList.remove('hidden');
         lucide.createIcons();
@@ -855,15 +878,39 @@
 
     function handleConfirmDemoAddVideo(e) {
       if (e) e.preventDefault();
+      const urlInput = document.getElementById('demoAddVideoUrl');
+      const nameInput = document.getElementById('demoAddVideoProjectName');
+      const err = document.getElementById('demoAddVideoError');
+
+      const rawUrl = urlInput ? urlInput.value.trim() : '';
+      if (!rawUrl) {
+        if (err) {
+          err.innerText = 'Please paste a video URL first (paste the sample link you copied!).';
+          err.classList.remove('hidden');
+        }
+        return;
+      }
+      if (err) err.classList.add('hidden');
+
       const btn = document.getElementById('demoAddVideoSubmitBtn');
       const btnText = document.getElementById('demoAddVideoSubmitBtnText');
       if (btn) btn.disabled = true;
       if (btnText) btnText.innerText = 'Ingesting Video...';
 
+      const finalTitle = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Cyberpunk City Edit (Sample Cut)';
+      const headerTitle = document.getElementById('demoReviewProjectTitle');
+      if (headerTitle) headerTitle.innerText = finalTitle;
+
+      const match = rawUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+      const ytId = match ? match[1] : '3iRUwVzRDZQ';
+
       setTimeout(() => {
         if (btn) btn.disabled = false;
         if (btnText) btnText.innerText = 'Add Video & Launch Review';
         closeDemoAddVideoModal();
+        if (demoYtPlayer && typeof demoYtPlayer.loadVideoById === 'function' && ytId !== '3iRUwVzRDZQ') {
+          demoYtPlayer.loadVideoById(ytId);
+        }
         setDemoStep(4);
       }, 600);
     }
