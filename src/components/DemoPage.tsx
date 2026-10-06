@@ -285,7 +285,12 @@ export function DemoPage({
       return;
     }
 
-    const detectedId = extractYouTubeID(trimmedUrl) || '3iRUwVzRDZQ';
+    const detectedId = extractYouTubeID(trimmedUrl);
+    if (!detectedId) {
+      setAddVideoError('Invalid link: The demo currently supports YouTube links only (e.g., https://www.youtube.com/watch?v=... or https://youtu.be/...). Other platforms are not supported in this demo.');
+      return;
+    }
+
     const finalTitle = projectNameInput.trim() || 'Cyberpunk City Edit (Sample Cut)';
 
     setIsAddingVideo(true);
@@ -458,32 +463,42 @@ export function DemoPage({
           </div>
         </div>
 
-        {/* Mobile Stepper Bar */}
-        <div className="sm:hidden border-t border-neutral-800/60 bg-neutral-950/90 px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            {stepsList.map((step) => (
-              <button
-                key={step.num}
-                type="button"
-                onClick={() => setCurrentStep(step.num)}
-                className={`w-7 h-7 rounded-full text-xs font-mono font-medium flex items-center justify-center ${
-                  currentStep === step.num
-                    ? 'bg-purple-600 text-white'
-                    : currentStep > step.num
-                      ? 'bg-purple-950 text-purple-300'
-                      : 'bg-neutral-900 text-neutral-500'
-                }`}
-              >
-                {step.num}
-              </button>
-            ))}
+        {/* Mobile Stepper Bar with Step Name & Touch-Friendly Tabs */}
+        <div className="sm:hidden border-t border-neutral-800/60 bg-neutral-950/95 px-3 py-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            {stepsList.map((step) => {
+              const isActive = currentStep === step.num;
+              const isPast = currentStep > step.num;
+              return (
+                <button
+                  key={step.num}
+                  type="button"
+                  onClick={() => setCurrentStep(step.num)}
+                  className={`w-8 h-8 rounded-full text-xs font-mono font-semibold flex items-center justify-center transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/40 ring-2 ring-purple-500/30'
+                      : isPast
+                        ? 'bg-purple-950/80 text-purple-300 border border-purple-800/50'
+                        : 'bg-neutral-900 text-neutral-500 border border-neutral-800/80'
+                  }`}
+                  aria-label={`Go to step ${step.num}: ${step.title}`}
+                >
+                  {step.num}
+                </button>
+              );
+            })}
           </div>
-          <span className="text-xs font-mono text-neutral-400">Step {currentStep}/5</span>
+          <div className="text-right shrink-0">
+            <span className="text-[11px] font-mono text-purple-400 font-semibold block">Step {currentStep}/5</span>
+            <span className="text-[10px] text-neutral-400 truncate max-w-[105px] block font-medium">
+              {stepsList.find(s => s.num === currentStep)?.title}
+            </span>
+          </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className={`flex-1 flex flex-col ${currentStep === 4 ? 'w-full max-w-7xl mx-auto p-3 sm:p-5' : 'justify-center items-center max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12'}`}>
+      <main className={`flex-1 flex flex-col ${currentStep === 4 ? 'w-full max-w-7xl mx-auto p-2.5 sm:p-5' : 'justify-center items-center max-w-4xl w-full mx-auto px-3.5 sm:px-6 py-6 sm:py-12'}`}>
         
         {/* STEP 1: Introduction (Centered & Eye-Pleasing) */}
         {currentStep === 1 && (
@@ -534,11 +549,11 @@ export function DemoPage({
             </div>
 
             {/* Centered Next Button */}
-            <div className="pt-2 flex flex-col items-center gap-2">
+            <div className="pt-2 flex flex-col items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setCurrentStep(2)}
-                className="px-8 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-medium text-sm transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-purple-600/30 hover:scale-102"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-medium text-sm transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 hover:scale-102"
               >
                 <span>Let's Go</span>
                 <ChevronRight size={16} />
@@ -550,21 +565,21 @@ export function DemoPage({
 
         {/* STEP 2: Adding a Video (Centered & Eye-Pleasing) */}
         {currentStep === 2 && (
-          <div className="flex flex-col items-center text-center space-y-8 animate-in fade-in duration-200 max-w-2xl mx-auto w-full">
+          <div className="flex flex-col items-center text-center space-y-6 sm:space-y-8 animate-in fade-in duration-200 max-w-2xl mx-auto w-full">
             <div className="space-y-3">
               <span className="inline-block text-xs font-semibold tracking-widest text-purple-400 uppercase bg-purple-950/70 border border-purple-800/50 px-3.5 py-1 rounded-full shadow-sm">
                 Step 2: Adding a Video
               </span>
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
                 How Creators Add Videos
               </h1>
-              <p className="text-sm sm:text-base text-neutral-400 max-w-lg mx-auto leading-relaxed">
+              <p className="text-xs sm:text-base text-neutral-400 max-w-lg mx-auto leading-relaxed">
                 Starting a review room is instant. You don't have to upload massive video files. Simply paste an existing public or unlisted YouTube cut or Google Drive video URL.
               </p>
             </div>
 
             {/* Mock Form Preview */}
-            <div className="p-6 sm:p-7 rounded-2xl bg-neutral-900/80 border border-neutral-800 space-y-4 w-full text-left shadow-xl">
+            <div className="p-4 sm:p-7 rounded-2xl bg-neutral-900/80 border border-neutral-800 space-y-4 w-full text-left shadow-xl">
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400">
                   Project Title
@@ -594,11 +609,11 @@ export function DemoPage({
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-center gap-3 w-full">
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-center gap-2.5 sm:gap-3 w-full">
               <button
                 type="button"
                 onClick={() => setCurrentStep(1)}
-                className="px-5 py-2.5 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-900 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-900 text-xs font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <ChevronLeft size={16} />
                 <span>Back</span>
@@ -607,7 +622,7 @@ export function DemoPage({
               <button
                 type="button"
                 onClick={() => setCurrentStep(3)}
-                className="px-7 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm shadow-purple-600/25"
+                className="w-full sm:w-auto px-7 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-sm shadow-purple-600/25"
               >
                 <span>Next: Get Sample Link</span>
                 <ChevronRight size={16} />
@@ -618,37 +633,37 @@ export function DemoPage({
 
         {/* STEP 3: Sample Video Link & Automated Add Video Trigger */}
         {currentStep === 3 && (
-          <div className="flex flex-col items-center text-center space-y-8 animate-in fade-in duration-200 max-w-2xl mx-auto w-full">
+          <div className="flex flex-col items-center text-center space-y-6 sm:space-y-8 animate-in fade-in duration-200 max-w-2xl mx-auto w-full">
             <div className="space-y-3">
               <span className="inline-block text-xs font-semibold tracking-widest text-purple-400 uppercase bg-purple-950/70 border border-purple-800/50 px-3.5 py-1 rounded-full shadow-sm">
                 Step 3: Sample Link
               </span>
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
                 Sample Video Link
               </h1>
-              <p className="text-sm sm:text-base text-neutral-400 max-w-lg mx-auto leading-relaxed">
+              <p className="text-xs sm:text-base text-neutral-400 max-w-lg mx-auto leading-relaxed">
                 Click below to copy our test video cut. As soon as you copy the link, the <strong className="text-purple-300">Add Video popup</strong> will automatically appear with blank fields so you can paste your link, name the project, and experience how easy it is to add videos to ScrubMark!
               </p>
             </div>
 
             {/* Link Copy Card */}
-            <div className="p-6 sm:p-8 rounded-2xl bg-neutral-900/80 border border-neutral-800 space-y-5 w-full shadow-xl">
+            <div className="p-4 sm:p-8 rounded-2xl bg-neutral-900/80 border border-neutral-800 space-y-4 sm:space-y-5 w-full shadow-xl">
               <div className="space-y-1.5 text-left">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400">
                   Sample YouTube URL
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full">
                   <input
                     type="text"
                     readOnly
                     value={SAMPLE_LINK}
                     onClick={handleCopySampleLink}
-                    className="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3.5 py-2.5 text-xs text-neutral-200 font-mono select-all outline-none cursor-pointer hover:border-purple-500/50 transition-colors"
+                    className="flex-1 min-w-0 bg-neutral-950 border border-neutral-800 rounded-lg px-3 sm:px-3.5 py-2.5 text-xs text-neutral-200 font-mono select-all outline-none cursor-pointer hover:border-purple-500/50 transition-colors"
                   />
                   <button
                     type="button"
                     onClick={handleCopySampleLink}
-                    className="px-4 py-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer bg-neutral-800 hover:bg-neutral-700 text-neutral-200 shrink-0"
+                    className="px-3.5 sm:px-4 py-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer bg-neutral-800 hover:bg-neutral-700 text-neutral-200 shrink-0"
                   >
                     <Copy size={14} />
                     <span>Copy</span>
@@ -660,7 +675,7 @@ export function DemoPage({
               <button
                 type="button"
                 onClick={handleCopySampleLink}
-                className="w-full py-3.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-semibold text-sm transition-all cursor-pointer shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 hover:scale-101"
+                className="w-full py-3 sm:py-3.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-semibold text-xs sm:text-sm transition-all cursor-pointer shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 hover:scale-101"
               >
                 <Copy size={16} />
                 <span>{copiedLink ? 'Link Copied! Opening Add Video...' : 'Copy Link & Add Video'}</span>
@@ -673,11 +688,11 @@ export function DemoPage({
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-center gap-3 w-full">
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-center gap-2.5 sm:gap-3 w-full">
               <button
                 type="button"
                 onClick={() => setCurrentStep(2)}
-                className="px-5 py-2.5 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-900 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-900 text-xs font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <ChevronLeft size={16} />
                 <span>Back</span>
@@ -686,7 +701,7 @@ export function DemoPage({
               <button
                 type="button"
                 onClick={openAddVideoModal}
-                className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shadow-purple-600/25"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-sm shadow-purple-600/25"
               >
                 <Plus size={14} />
                 <span>Add Video</span>
@@ -699,45 +714,45 @@ export function DemoPage({
         {currentStep === 4 && (
           <div className="w-full flex-1 flex flex-col space-y-3 animate-in fade-in duration-200 min-h-0">
             {/* Top Bar for Review Room inside Step 4 */}
-            <div className="bg-neutral-900/90 border border-neutral-800 rounded-xl px-4 py-2.5 flex items-center justify-between shrink-0 shadow-md">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-950/60 border border-purple-800/60 px-2 py-0.5 rounded">
+            <div className="bg-neutral-900/90 border border-neutral-800 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between shrink-0 shadow-md gap-2">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-950/60 border border-purple-800/60 px-1.5 sm:px-2 py-0.5 rounded shrink-0">
                   ScrubMark
                 </span>
-                <h1 className="font-semibold text-white text-sm sm:text-base truncate max-w-xs sm:max-w-md">
+                <h1 className="font-semibold text-white text-xs sm:text-base truncate max-w-[120px] xs:max-w-[180px] sm:max-w-md">
                   {demoProjectTitle}
                 </h1>
               </div>
 
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsShareModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-medium transition-colors cursor-pointer border border-neutral-700/60"
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-medium transition-colors cursor-pointer border border-neutral-700/60"
                 >
-                  <Share2 size={13} className="text-purple-400" />
-                  <span>Share</span>
+                  <Share2 size={13} className="text-purple-400 shrink-0" />
+                  <span className="hidden xs:inline">Share</span>
                 </button>
 
-                <div className="hidden xs:flex items-center gap-1.5 text-xs text-neutral-400 bg-neutral-950 px-2.5 py-1 rounded-lg border border-neutral-800">
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-neutral-400 bg-neutral-950 px-2.5 py-1 rounded-lg border border-neutral-800">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
                   <span className="text-neutral-200 font-medium">Tester</span>
-                  <span className="text-[10px] text-purple-400 uppercase tracking-wider">Client Reviewer</span>
+                  <span className="text-[10px] text-purple-400 uppercase tracking-wider">Reviewer</span>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setCurrentStep(5)}
-                  className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                  className="px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 shadow-sm shrink-0"
                 >
-                  <span>Finish & Raffle</span>
+                  <span>Finish</span>
                   <ChevronRight size={14} />
                 </button>
               </div>
             </div>
 
             {/* The Actual Two-Panel Video Review Room Layout from VideoReview.tsx */}
-            <div className="flex-1 flex flex-col md:flex-row min-h-[520px] md:min-h-[560px] border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl bg-neutral-900">
+            <div className="flex-1 flex flex-col md:flex-row md:h-[600px] lg:h-[650px] border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl bg-neutral-900">
               
               {/* Left Column: Full YouTube Video Player + Control Bar */}
               <div className="w-full md:flex-1 flex flex-col shrink-0 md:shrink relative bg-black">
@@ -759,23 +774,23 @@ export function DemoPage({
                     className="absolute inset-0 w-full h-full"
                     iframeClassName="w-full h-full"
                   />
-                  <div className="absolute top-3 left-3 pointer-events-none z-10">
-                    <span className="px-2.5 py-1 rounded-lg bg-black/85 text-purple-300 font-mono text-xs border border-purple-500/30 shadow-sm backdrop-blur-xs">
+                  <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 pointer-events-none z-10">
+                    <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg bg-black/85 text-purple-300 font-mono text-[11px] sm:text-xs border border-purple-500/30 shadow-sm backdrop-blur-xs">
                       {formatTime(currentTimestamp)}
                     </span>
                   </div>
                 </div>
 
                 {/* Reviewer Control Bar (Play/Pause, -5s, +5s, Timestamp, Keyboard Hints) */}
-                <div className="h-11 sm:h-12 bg-neutral-950 border-t border-neutral-800 px-3 sm:px-4 flex items-center justify-between shrink-0 text-xs text-neutral-300">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="min-h-12 sm:h-12 bg-neutral-950 border-t border-neutral-800 px-2.5 sm:px-4 py-2 sm:py-0 flex items-center justify-between shrink-0 text-xs text-neutral-300 overflow-x-auto no-scrollbar gap-1.5 sm:gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={togglePlayPause}
                       title="Play / Pause (Space)"
-                      className="px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
+                      className="px-2.5 sm:px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs font-medium"
                     >
-                      {isPlaying ? <Pause size={14} className="text-purple-400" /> : <Play size={14} className="text-purple-400" />}
+                      {isPlaying ? <Pause size={13} className="text-purple-400" /> : <Play size={13} className="text-purple-400" />}
                       <span>{isPlaying ? 'Pause' : 'Play'}</span>
                     </button>
 
@@ -783,9 +798,9 @@ export function DemoPage({
                       type="button"
                       onClick={() => seekRelative(-5)}
                       title="Rewind 5s (←)"
-                      className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono text-xs"
+                      className="px-2 sm:px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-0.5 sm:gap-1 font-mono text-xs"
                     >
-                      <RotateCcw size={13} />
+                      <RotateCcw size={12} />
                       <span>-5s</span>
                     </button>
 
@@ -793,15 +808,15 @@ export function DemoPage({
                       type="button"
                       onClick={() => seekRelative(5)}
                       title="Forward 5s (→)"
-                      className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono text-xs"
+                      className="px-2 sm:px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-0.5 sm:gap-1 font-mono text-xs"
                     >
-                      <RotateCw size={13} />
+                      <RotateCw size={12} />
                       <span>+5s</span>
                     </button>
 
                     {/* Clickable / Editable Timestamp Indicator */}
                     {isEditingTime ? (
-                      <form onSubmit={handleTimeInputSubmit} className="flex items-center gap-1 ml-1">
+                      <form onSubmit={handleTimeInputSubmit} className="flex items-center gap-1 ml-0.5 sm:ml-1">
                         <input
                           type="text"
                           autoFocus
@@ -809,7 +824,7 @@ export function DemoPage({
                           onChange={(e) => setTimeInputStr(e.target.value)}
                           onBlur={() => handleTimeInputSubmit()}
                           placeholder="0:15"
-                          className="w-16 px-1.5 py-0.5 rounded bg-neutral-800 border border-purple-500 font-mono text-xs text-white outline-none"
+                          className="w-14 sm:w-16 px-1.5 py-0.5 rounded bg-neutral-800 border border-purple-500 font-mono text-xs text-white outline-none"
                         />
                         <button type="submit" className="text-[10px] text-purple-400 hover:text-purple-300 font-semibold px-1 cursor-pointer">Set</button>
                       </form>
@@ -821,15 +836,15 @@ export function DemoPage({
                           setIsEditingTime(true);
                         }}
                         title="Click to edit timestamp manually"
-                        className="group flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-neutral-800 text-neutral-400 hover:text-purple-300 font-mono text-xs ml-1 font-medium cursor-pointer transition-colors"
+                        className="group flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-neutral-800 text-neutral-400 hover:text-purple-300 font-mono text-xs ml-0.5 sm:ml-1 font-medium cursor-pointer transition-colors"
                       >
                         <span>{formatTime(currentTimestamp)}</span>
-                        <Edit3 size={11} className="opacity-0 group-hover:opacity-75" />
+                        <Edit3 size={10} className="opacity-0 group-hover:opacity-75" />
                       </button>
                     )}
                   </div>
 
-                  <div className="hidden md:flex items-center gap-3 text-neutral-500 text-[11px]">
+                  <div className="hidden md:flex items-center gap-3 text-neutral-500 text-[11px] shrink-0">
                     <span className="flex items-center gap-1">
                       <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">Space</kbd> Play/Pause
                     </span>
@@ -842,10 +857,10 @@ export function DemoPage({
               </div>
 
               {/* Right Column: Review Notes Sidebar & Comment Composer (from VideoReview.tsx) */}
-              <div className="w-full md:w-96 bg-neutral-900 md:border-l border-neutral-800 flex flex-col flex-1 md:flex-initial min-h-0 overflow-hidden">
+              <div className="w-full md:w-96 bg-neutral-900 border-t md:border-t-0 md:border-l border-neutral-800 flex flex-col md:h-full overflow-hidden">
                 
                 {/* Sidebar Header */}
-                <div className="px-4 py-2.5 sm:py-3 border-b border-neutral-800 bg-neutral-950 flex items-center justify-between shrink-0">
+                <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-neutral-800 bg-neutral-950 flex items-center justify-between shrink-0">
                   <h2 className="font-semibold flex items-center gap-2 text-xs sm:text-sm text-white">
                     <MessageSquare size={15} className="text-purple-400" />
                     Review Notes
@@ -866,8 +881,8 @@ export function DemoPage({
                   </div>
                 </div>
 
-                {/* Notes List */}
-                <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
+                {/* Notes List (constrained max-height on mobile so composer remains easily accessible) */}
+                <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[260px] md:max-h-none">
                   <div>
                     <h3 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-2.5 px-1">
                       Active Notes ({activeComments.length})
@@ -1160,8 +1175,8 @@ export function DemoPage({
 
       {/* POPUP 1: AUTOMATIC ADD VIDEO MODAL */}
       {isAddVideoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 sm:p-7 max-w-md w-full shadow-2xl space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-150 my-auto max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-sm">
@@ -1205,14 +1220,14 @@ export function DemoPage({
                   value={projectNameInput}
                   onChange={(e) => setProjectNameInput(e.target.value)}
                   placeholder="e.g. Cyberpunk City Edit (or any project name)"
-                  className="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 outline-none transition-colors"
+                  className="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-sm sm:text-xs text-white placeholder-neutral-500 outline-none transition-colors"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                    Video URL
+                    YouTube Video URL <span className="text-purple-400 normal-case font-normal">(YouTube only)</span>
                   </label>
                   <button
                     type="button"
@@ -1230,19 +1245,19 @@ export function DemoPage({
                     setVideoUrlInput(e.target.value);
                     if (addVideoError) setAddVideoError(null);
                   }}
-                  placeholder="Paste YouTube URL here (e.g. paste your copied sample link)"
-                  className="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-xs text-purple-300 font-mono placeholder-neutral-500 outline-none transition-colors"
+                  placeholder="Paste YouTube URL here (e.g. https://www.youtube.com/watch?v=...)"
+                  className={`w-full bg-neutral-950 border ${addVideoError ? 'border-red-500 focus:border-red-400' : 'border-neutral-800 focus:border-purple-500'} rounded-lg px-3.5 py-2.5 text-sm sm:text-xs text-purple-300 font-mono placeholder-neutral-500 outline-none transition-colors`}
                 />
                 <p className="text-[11px] text-neutral-500">
-                  Paste the sample link you copied (or any YouTube cut) to experience frame-by-frame review.
+                  Please provide a valid YouTube video link (or paste the sample link you copied). Other platforms are not supported in this demo.
                 </p>
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2.5">
+              <div className="pt-2 flex flex-col-reverse sm:flex-row items-center sm:justify-end gap-2 sm:gap-2.5">
                 <button
                   type="button"
                   onClick={() => setIsAddVideoModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-850 text-xs font-medium transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-850 text-xs font-medium transition-colors cursor-pointer text-center"
                 >
                   Cancel
                 </button>
@@ -1250,7 +1265,7 @@ export function DemoPage({
                 <button
                   type="submit"
                   disabled={isAddingVideo}
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-medium text-xs transition-colors cursor-pointer shadow-md shadow-purple-600/25 flex items-center gap-1.5"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-medium text-xs transition-colors cursor-pointer shadow-md shadow-purple-600/25 flex items-center justify-center gap-1.5"
                 >
                   {isAddingVideo ? (
                     <>
@@ -1272,8 +1287,8 @@ export function DemoPage({
 
       {/* POPUP 2: COMMENT SUBMITTED & APPROVAL NOTICE (Requested by user) */}
       {isApprovalModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 sm:p-7 max-w-md w-full shadow-2xl space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-150 text-center my-auto max-h-[92vh] overflow-y-auto">
             <div className="w-12 h-12 rounded-2xl bg-purple-950 border border-purple-800/80 text-purple-400 flex items-center justify-center mx-auto shadow-inner">
               <CheckCircle2 size={26} />
             </div>
@@ -1335,8 +1350,8 @@ export function DemoPage({
 
       {/* POPUP 3: SHARE MODAL (Matches VideoReview.tsx) */}
       {isShareModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 my-auto max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center">

@@ -78,15 +78,15 @@
     </div>
 
     <!-- Mobile Stepper Bar -->
-    <div class="sm:hidden border-t border-neutral-800/60 bg-neutral-950/90 px-4 py-2 flex items-center justify-between">
-      <div class="flex items-center gap-1">
-        <button onclick="setDemoStep(1)" class="w-7 h-7 rounded-full text-xs font-mono font-medium flex items-center justify-center bg-purple-600 text-white">1</button>
-        <button onclick="setDemoStep(2)" class="w-7 h-7 rounded-full text-xs font-mono font-medium flex items-center justify-center bg-neutral-900 text-neutral-500">2</button>
-        <button onclick="setDemoStep(3)" class="w-7 h-7 rounded-full text-xs font-mono font-medium flex items-center justify-center bg-neutral-900 text-neutral-500">3</button>
-        <button onclick="setDemoStep(4)" class="w-7 h-7 rounded-full text-xs font-mono font-medium flex items-center justify-center bg-neutral-900 text-neutral-500">4</button>
-        <button onclick="setDemoStep(5)" class="w-7 h-7 rounded-full text-xs font-mono font-medium flex items-center justify-center bg-neutral-900 text-neutral-500">5</button>
+    <div class="sm:hidden border-t border-neutral-800/60 bg-neutral-950/95 px-3 py-2 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+        <button id="mobileStepBtn1" onclick="setDemoStep(1)" class="w-8 h-8 rounded-full text-xs font-mono font-semibold flex items-center justify-center bg-purple-600 text-white shadow-md shadow-purple-600/40 ring-2 ring-purple-500/30">1</button>
+        <button id="mobileStepBtn2" onclick="setDemoStep(2)" class="w-8 h-8 rounded-full text-xs font-mono font-semibold flex items-center justify-center bg-neutral-900 text-neutral-500 border border-neutral-800/80">2</button>
+        <button id="mobileStepBtn3" onclick="setDemoStep(3)" class="w-8 h-8 rounded-full text-xs font-mono font-semibold flex items-center justify-center bg-neutral-900 text-neutral-500 border border-neutral-800/80">3</button>
+        <button id="mobileStepBtn4" onclick="setDemoStep(4)" class="w-8 h-8 rounded-full text-xs font-mono font-semibold flex items-center justify-center bg-neutral-900 text-neutral-500 border border-neutral-800/80">4</button>
+        <button id="mobileStepBtn5" onclick="setDemoStep(5)" class="w-8 h-8 rounded-full text-xs font-mono font-semibold flex items-center justify-center bg-neutral-900 text-neutral-500 border border-neutral-800/80">5</button>
       </div>
-      <span id="mobileStepCounter" class="text-xs font-mono text-neutral-400">Step 1/5</span>
+      <span id="mobileStepCounter" class="text-xs font-mono text-neutral-400 shrink-0">Step 1/5</span>
     </div>
   </header>
 
@@ -224,72 +224,72 @@
     <!-- STEP 4: Live Interactive Demo Using THE ACTUAL MAIN WEBSITE REVIEW LAYOUT -->
     <div id="demoStep4" class="hidden w-full flex-1 flex flex-col space-y-3 animate-in fade-in duration-200 min-h-0">
       <!-- Top Bar of Review Room inside Step 4 -->
-      <div class="bg-neutral-900/90 border border-neutral-800 rounded-xl px-4 py-2.5 flex items-center justify-between shrink-0 shadow-md">
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-950/60 border border-purple-800/60 px-2 py-0.5 rounded">
+      <div class="bg-neutral-900/90 border border-neutral-800 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between shrink-0 shadow-md gap-2">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+          <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-950/60 border border-purple-800/60 px-1.5 sm:px-2 py-0.5 rounded shrink-0">
             ScrubMark
           </span>
-          <h1 id="demoReviewProjectTitle" class="font-semibold text-white text-sm sm:text-base truncate max-w-xs sm:max-w-md">
+          <h1 id="demoReviewProjectTitle" class="font-semibold text-white text-xs sm:text-base truncate max-w-[110px] xs:max-w-[170px] sm:max-w-md">
             Cyberpunk City Edit (Sample Cut)
           </h1>
         </div>
 
-        <div class="flex items-center gap-2 sm:gap-3">
-          <button type="button" onclick="openDemoShareModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-medium transition-colors cursor-pointer border border-neutral-700/60">
+        <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <button type="button" onclick="openDemoShareModal()" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-medium transition-colors cursor-pointer border border-neutral-700/60">
             <i data-lucide="share-2" class="w-3.5 h-3.5 text-purple-400"></i>
-            <span>Share</span>
+            <span class="hidden xs:inline">Share</span>
           </button>
 
-          <div class="hidden xs:flex items-center gap-1.5 text-xs text-neutral-400 bg-neutral-950 px-2.5 py-1 rounded-lg border border-neutral-800">
+          <div class="hidden sm:flex items-center gap-1.5 text-xs text-neutral-400 bg-neutral-950 px-2.5 py-1 rounded-lg border border-neutral-800">
             <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
             <span class="text-neutral-200 font-medium">Tester</span>
             <span class="text-[10px] text-purple-400 uppercase tracking-wider">Client Reviewer</span>
           </div>
 
-          <button type="button" onclick="setDemoStep(5)" class="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 shadow-sm">
-            <span>Finish & Raffle</span>
+          <button type="button" onclick="setDemoStep(5)" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 shadow-sm shrink-0">
+            <span>Finish</span>
             <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
           </button>
         </div>
       </div>
 
       <!-- Two-Panel Review Layout (Matches VideoReview.tsx) -->
-      <div class="flex-1 flex flex-col md:flex-row min-h-[520px] md:min-h-[560px] border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl bg-neutral-900">
+      <div class="flex-1 flex flex-col md:flex-row md:h-[600px] lg:h-[650px] border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl bg-neutral-900">
         
         <!-- Left: Full Player Stage & Controls -->
         <div class="w-full md:flex-1 flex flex-col shrink-0 md:shrink relative bg-black">
           <div class="w-full aspect-video md:aspect-auto md:flex-1 relative bg-black flex items-center justify-center">
             <div id="ytPlayerContainer" class="absolute inset-0 w-full h-full"></div>
-            <div class="absolute top-3 left-3 pointer-events-none z-10">
-              <span id="demoLiveTimeBadge" class="px-2.5 py-1 rounded-lg bg-black/85 text-purple-300 font-mono text-xs border border-purple-500/30 shadow-sm backdrop-blur-xs">0:15</span>
+            <div class="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 pointer-events-none z-10">
+              <span id="demoLiveTimeBadge" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg bg-black/85 text-purple-300 font-mono text-[11px] sm:text-xs border border-purple-500/30 shadow-sm backdrop-blur-xs">0:15</span>
             </div>
           </div>
 
           <!-- Reviewer Control Bar -->
-          <div class="h-11 sm:h-12 bg-neutral-950 border-t border-neutral-800 px-3 sm:px-4 flex items-center justify-between shrink-0 text-xs text-neutral-300">
-            <div class="flex items-center gap-1.5 sm:gap-2">
-              <button type="button" onclick="toggleDemoPlayPause()" title="Play / Pause" class="px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium">
+          <div class="min-h-12 sm:h-12 bg-neutral-950 border-t border-neutral-800 px-2.5 sm:px-4 py-2 sm:py-0 flex items-center justify-between shrink-0 text-xs text-neutral-300 overflow-x-auto no-scrollbar gap-1.5 sm:gap-2">
+            <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+              <button type="button" onclick="toggleDemoPlayPause()" title="Play / Pause" class="px-2.5 sm:px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs font-medium">
                 <i data-lucide="play" id="demoPlayIcon" class="w-3.5 h-3.5 text-purple-400"></i>
                 <span id="demoPlayText">Play</span>
               </button>
 
-              <button type="button" onclick="seekDemoRelative(-5)" title="Rewind 5s" class="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono text-xs">
+              <button type="button" onclick="seekDemoRelative(-5)" title="Rewind 5s" class="px-2 sm:px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-0.5 sm:gap-1 font-mono text-xs">
                 <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
                 <span>-5s</span>
               </button>
 
-              <button type="button" onclick="seekDemoRelative(5)" title="Forward 5s" class="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-mono text-xs">
+              <button type="button" onclick="seekDemoRelative(5)" title="Forward 5s" class="px-2 sm:px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-0.5 sm:gap-1 font-mono text-xs">
                 <i data-lucide="rotate-cw" class="w-3 h-3"></i>
                 <span>+5s</span>
               </button>
 
               <!-- Current Time Badge -->
-              <div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-950/70 border border-purple-800/40 text-purple-300 font-mono text-xs ml-1 font-medium">
+              <div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-950/70 border border-purple-800/40 text-purple-300 font-mono text-xs ml-0.5 sm:ml-1 font-medium">
                 <span id="demoControlTime">0:15</span>
               </div>
             </div>
 
-            <div class="hidden md:flex items-center gap-3 text-neutral-500 text-[11px]">
+            <div class="hidden md:flex items-center gap-3 text-neutral-500 text-[11px] shrink-0">
               <span class="flex items-center gap-1">
                 <kbd class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] border border-neutral-700">Space</kbd> Play/Pause
               </span>
@@ -302,7 +302,7 @@
         </div>
 
         <!-- Right: Review Notes Sidebar -->
-        <div class="w-full md:w-96 bg-neutral-900 md:border-l border-neutral-800 flex flex-col flex-1 md:flex-initial min-h-0 overflow-hidden">
+        <div class="w-full md:w-96 bg-neutral-900 border-t md:border-t-0 md:border-l border-neutral-800 flex flex-col md:h-full overflow-hidden">
           
           <!-- Sidebar Header -->
           <div class="px-4 py-2.5 sm:py-3 border-b border-neutral-800 bg-neutral-950 flex items-center justify-between shrink-0">
@@ -327,7 +327,7 @@
           </div>
 
           <!-- Active Notes List -->
-          <div class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
+          <div class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[260px] md:max-h-none">
             <div>
               <h3 class="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-2.5 px-1">
                 Active Notes
@@ -482,8 +482,8 @@
   </main>
 
   <!-- POPUP 1: AUTOMATIC ADD VIDEO MODAL -->
-  <div id="demoAddVideoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-    <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+  <div id="demoAddVideoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 sm:p-7 max-w-md w-full shadow-2xl space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-150 my-auto max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-sm">
@@ -506,26 +506,26 @@
       <form onsubmit="handleConfirmDemoAddVideo(event)" class="space-y-4">
         <div class="space-y-1.5">
           <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400">Project Title</label>
-          <input type="text" id="demoAddVideoProjectName" placeholder="e.g. Cyberpunk City Edit (or any project name)" value="" class="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 outline-none transition-colors">
+          <input type="text" id="demoAddVideoProjectName" placeholder="e.g. Cyberpunk City Edit (or any project name)" value="" class="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-sm sm:text-xs text-white placeholder-neutral-500 outline-none transition-colors">
         </div>
 
         <div class="space-y-1.5">
           <div class="flex items-center justify-between">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400">Video URL</label>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-neutral-400">YouTube Video URL <span class="text-purple-400 normal-case font-normal">(YouTube only)</span></label>
             <button type="button" onclick="pasteSampleLinkIntoDemoModal()" class="text-[11px] text-purple-400 hover:text-purple-300 transition-colors cursor-pointer flex items-center gap-1 font-medium">
               <i data-lucide="copy" class="w-3 h-3"></i>
               <span>Paste Sample Link</span>
             </button>
           </div>
-          <input type="url" id="demoAddVideoUrl" placeholder="Paste YouTube link here (e.g. paste your copied sample link)" value="" class="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-xs text-purple-300 font-mono placeholder-neutral-500 outline-none transition-colors">
-          <p class="text-[11px] text-neutral-500">Paste the sample link you copied (or any YouTube cut) to test frame-by-frame review.</p>
+          <input type="url" id="demoAddVideoUrl" placeholder="Paste YouTube link here (e.g. https://www.youtube.com/watch?v=...)" value="" class="w-full bg-neutral-950 border border-neutral-800 focus:border-purple-500 rounded-lg px-3.5 py-2.5 text-sm sm:text-xs text-purple-300 font-mono placeholder-neutral-500 outline-none transition-colors">
+          <p class="text-[11px] text-neutral-500">Please provide a valid YouTube link (or paste the sample link you copied). Other platforms are not supported in this demo.</p>
         </div>
 
-        <div class="pt-2 flex items-center justify-end gap-2.5">
-          <button type="button" onclick="closeDemoAddVideoModal()" class="px-4 py-2 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-850 text-xs font-medium transition-colors cursor-pointer">
+        <div class="pt-2 flex flex-col-reverse sm:flex-row items-center sm:justify-end gap-2 sm:gap-2.5">
+          <button type="button" onclick="closeDemoAddVideoModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-850 text-xs font-medium transition-colors cursor-pointer text-center">
             Cancel
           </button>
-          <button type="submit" id="demoAddVideoSubmitBtn" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-medium text-xs transition-colors cursor-pointer shadow-md shadow-purple-600/25 flex items-center gap-1.5">
+          <button type="submit" id="demoAddVideoSubmitBtn" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-medium text-xs transition-colors cursor-pointer shadow-md shadow-purple-600/25 flex items-center justify-center gap-1.5">
             <span id="demoAddVideoSubmitBtnText">Add Video & Launch Review</span>
             <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
           </button>
@@ -535,8 +535,8 @@
   </div>
 
   <!-- POPUP 2: COMMENT SUBMITTED & APPROVAL NOTICE (Requested by user) -->
-  <div id="demoApprovalModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-    <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 text-center">
+  <div id="demoApprovalModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 sm:p-7 max-w-md w-full shadow-2xl space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-150 text-center my-auto max-h-[92vh] overflow-y-auto">
       <div class="w-12 h-12 rounded-2xl bg-purple-950 border border-purple-800/80 text-purple-400 flex items-center justify-center mx-auto shadow-inner">
         <i data-lucide="check-circle-2" class="w-7 h-7"></i>
       </div>
@@ -588,8 +588,8 @@
   </div>
 
   <!-- POPUP 3: SHARE MODAL -->
-  <div id="demoShareModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-    <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+  <div id="demoShareModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 my-auto max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
           <div class="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center">
@@ -799,6 +799,16 @@
             tabEl.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800/70 cursor-pointer';
           }
         }
+        const mobBtn = document.getElementById('mobileStepBtn' + i);
+        if (mobBtn) {
+          if (i === stepNum) {
+            mobBtn.className = 'w-8 h-8 rounded-full text-xs font-mono font-semibold flex items-center justify-center bg-purple-600 text-white shadow-md shadow-purple-600/40 ring-2 ring-purple-500/30';
+          } else if (i < stepNum) {
+            mobBtn.className = 'w-8 h-8 rounded-full text-xs font-mono font-semibold flex items-center justify-center bg-purple-950/80 text-purple-300 border border-purple-800/50';
+          } else {
+            mobBtn.className = 'w-8 h-8 rounded-full text-xs font-mono font-semibold flex items-center justify-center bg-neutral-900 text-neutral-500 border border-neutral-800/80';
+          }
+        }
       }
 
       // Adjust main container layout for Step 4
@@ -890,7 +900,19 @@
         }
         return;
       }
+
+      // Validate YouTube link format strictly
+      const match = rawUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+      if (!match || !match[1]) {
+        if (err) {
+          err.innerText = 'Invalid link: The demo currently supports YouTube links only (e.g., https://www.youtube.com/watch?v=... or https://youtu.be/...). Other platforms are not supported in this demo.';
+          err.classList.remove('hidden');
+        }
+        return;
+      }
       if (err) err.classList.add('hidden');
+
+      const ytId = match[1];
 
       const btn = document.getElementById('demoAddVideoSubmitBtn');
       const btnText = document.getElementById('demoAddVideoSubmitBtnText');
@@ -900,9 +922,6 @@
       const finalTitle = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Cyberpunk City Edit (Sample Cut)';
       const headerTitle = document.getElementById('demoReviewProjectTitle');
       if (headerTitle) headerTitle.innerText = finalTitle;
-
-      const match = rawUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
-      const ytId = match ? match[1] : '3iRUwVzRDZQ';
 
       setTimeout(() => {
         if (btn) btn.disabled = false;
